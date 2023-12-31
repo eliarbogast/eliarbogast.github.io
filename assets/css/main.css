@@ -1763,6 +1763,9 @@ input, select, textarea {
 			padding-left: 0.25em;
 		}
 
+	li::marker {
+		content: ">"
+	}
 /* Actions */
 
 	ul.actions {
