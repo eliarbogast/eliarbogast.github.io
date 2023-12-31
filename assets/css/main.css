@@ -1420,12 +1420,12 @@ input, select, textarea {
 		
 		/* Animate the text when loading the element. */
 			/* This animates it on page load and when hovering out. */
-		animation: rainbow-text-simple-animation-rev 0.75s ease forwards;
+		animation: rainbow-text-simple-animation-rev 1.75s ease forwards;
 
 	}
 
 	.animake:hover{
-		animation: rainbow-text-simple-animation 0.5s ease-in forwards;
+		animation: rainbow-text-simple-animation 1.5s ease-in forwards;
 	}
 
 	/* Move the background and make it smaller. */
