@@ -8,7 +8,6 @@
 
 	var $window = $(window),
 		$body = $('body'),
-		$wrapper = $('#wrapper'),
 		$main = $('#main'),
 		$panels = $main.children('.panel'),
 		$nav = $('#nav'), $nav_links = $nav.children('a');
@@ -37,6 +36,7 @@
 
 				// Not a panel link? Bail.
 					if (href.charAt(0) != '#'
+					||	href.length < 2
 					||	$panels.filter(href).length == 0)
 						return;
 
@@ -136,6 +136,13 @@
 						// Show target panel.
 							$panel.show();
 
+						// Replay the tagline colour sweep when returning home.
+							$panel.find('.tagline').each(function() {
+								this.style.animation = 'none';
+								void this.offsetWidth;
+								this.style.animation = '';
+							});
+
 						// Set new max/min height.
 							$main
 								.css('max-height', $panel.outerHeight() + 'px')
@@ -155,69 +162,10 @@
 										.css('max-height', '')
 										.css('min-height', '');
 
-								// IE: Refresh.
-									$window.triggerHandler('--refresh');
-
-								// Unlock.
-									locked = false;
-
 							}, (breakpoints.active('small') ? 0 : 500));
 
 					}, 250);
 
 			});
-
-	// IE: Fixes.
-		if (browser.name == 'ie') {
-
-			// Fix min-height/flexbox.
-				$window.on('--refresh', function() {
-
-					$wrapper.css('height', 'auto');
-
-					window.setTimeout(function() {
-
-						var h = $wrapper.height(),
-							wh = $window.height();
-
-						if (h < wh)
-							$wrapper.css('height', '100vh');
-
-					}, 0);
-
-				});
-
-				$window.on('resize load', function() {
-					$window.triggerHandler('--refresh');
-				});
-
-			// Fix intro pic.
-				$('.panel.intro').each(function() {
-
-					var $pic = $(this).children('.pic'),
-						$img = $pic.children('img');
-
-					$pic
-						.css('background-image', 'url(' + $img.attr('src') + ')')
-						.css('background-size', 'cover')
-						.css('background-position', 'center');
-
-					$img
-						.css('visibility', 'hidden');
-
-				});
-
-		}
-
-	//Gallery
-	$(function() {
-		$('.wrapper').click(function() {
-			$('.wrapper').each(function() {
-			   $(this).css('z-index', 0); 
-			});
-				$(this).css('z-index', 10); 
-				$(this).toggleClass('open');    
-		}) 
-	  })
 
 })(jQuery);

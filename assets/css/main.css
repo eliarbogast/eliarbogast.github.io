@@ -1,11 +1,50 @@
-@import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,300italic,400italic");
 @import url("fontawesome-all.min.css");
 
 /*
 	Astral by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+
+	Template styles. Site-specific components live in custom.css.
 */
+
+/* Fonts (self-hosted, SIL Open Font License) */
+
+	@font-face {
+		font-family: 'Space Grotesk';
+		src: url("../webfonts/space-grotesk-latin-var.woff2") format("woff2-variations"),
+			 url("../webfonts/space-grotesk-latin-var.woff2") format("woff2");
+		font-weight: 300 700;
+		font-style: normal;
+		font-display: swap;
+	}
+
+	@font-face {
+		font-family: 'JetBrains Mono';
+		src: url("../webfonts/jetbrains-mono-latin-400.woff2") format("woff2");
+		font-weight: 400;
+		font-style: normal;
+		font-display: swap;
+	}
+
+/* Palette (sampled from the original fluid-art background) */
+
+	:root {
+		--bg: #0b0b09;
+		--ink: #f4f1ec;
+		--text: #d9d4cc;
+		--muted: #a39b91;
+		--ember: #d55137;
+		--ember-bright: #e8704f;
+		--amber: #b87a45;
+		--gold: #bf995f;
+		--crimson: #a52f34;
+		--maroon: #38211c;
+		--teal: #399ea3;
+		--teal-deep: #24826f;
+		--font-sans: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+		--font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+	}
 
 html, body, div, span, applet, object,
 iframe, h1, h2, h3, h4, h5, h6, p, blockquote,
@@ -52,7 +91,7 @@ table {
 }
 
 body {
-	-webkit-text-size-adjust: none;
+	-webkit-text-size-adjust: 100%;
 }
 
 mark {
@@ -1306,10 +1345,9 @@ input, select, textarea {
 	}
 
 	body {
-		background-image: url("images/overlay.png"), url("images/bg.jpg");
-		background-repeat: repeat, no-repeat;
-		background-size: auto, 100% 100%;
-		background-attachment: fixed;
+		/* The animated background is drawn on #automaton (see custom.css / automaton.js).
+		   noscript.css restores the original fluid-art image when JS is off. */
+		background-color: var(--bg);
 		overflow-y: scroll;
 	}
 
@@ -1325,9 +1363,9 @@ input, select, textarea {
 		}
 
 	body, input, textarea, select {
-		font-family: 'Source Sans Pro', sans-serif;
+		font-family: var(--font-sans);
 		font-weight: 300;
-		color: #ffffff;
+		color: var(--text);
 		font-size: 20pt;
 		line-height: 1.75em;
 	}
@@ -1365,21 +1403,21 @@ input, select, textarea {
 		}
 
 	strong, b, h1, h2, h3, h4, h5, h6 {
-		font-weight: 400;
-		color: #c8c8c8;
+		font-weight: 500;
+		color: var(--ink);
 	}
 
 	h1 {
 		font-size: 2.4em;
+		font-weight: 400;
 		letter-spacing: -0.015em;
 	}
 
 	h2 {
 		font-size: 2.8em;
-		font-weight: bolder;
+		font-weight: 600;
 		text-align: center;
-		letter-spacing: -0.015em;
-		margin-bottom: 0;
+		letter-spacing: -0.02em;
 		margin-bottom: -0.25em;
 		display: block;
 		margin-left: auto;
@@ -1390,70 +1428,6 @@ input, select, textarea {
 	h3, h4, h5, h6 {
 		font-size: 1.25em;
 		letter-spacing: -0.015em;
-	}
-	.animake {
-			/* Fallback: Set a background color. */
-		background-color: #CA4246;
-		
-		/* Create the gradient. */
-		background-image: linear-gradient(
-				45deg,
-				#CA4246 16.666%, 
-				#E16541 16.666%, 
-				#E16541 33.333%, 
-				#F18F43 33.333%, 
-				#F18F43 50%, 
-				#8B9862 50%, 
-				#1888d2 66.666%, 
-				#476098 66.666%, 
-				#476098 83.333%, 
-				#A7489B 83.333%);
-		
-		/* Set the background size and repeat properties. */
-		background-size: 100%;
-		background-repeat: repeat;
-
-		/* Use the text as a mask for the background. */
-		/* This will show the gradient as a text color rather than element bg. */
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent; 
-		
-		/* Animate the text when loading the element. */
-			/* This animates it on page load and when hovering out. */
-		animation: rainbow-text-simple-animation-rev 1.75s ease forwards;
-
-	}
-
-	.animake:hover{
-		animation: rainbow-text-simple-animation 1.5s ease-in forwards;
-	}
-
-	/* Move the background and make it smaller. */
-	/* Animation shown when entering the page and after the hover animation. */
-	@keyframes rainbow-text-simple-animation-rev {
-		0% {
-			background-size: 650%;
-		}
-		40% {
-			background-size: 650%;
-		}
-		100% {
-			background-size: 100%;
-		}
-	}
-
-	/* Move the background and make it larger. */
-	/* Animation shown when hovering over the text. */
-	@keyframes rainbow-text-simple-animation {
-		0% {
-			background-size: 100%;
-		}
-		80% {
-			background-size: 650%;
-		}
-		100% {
-			background-size: 650%;
-		}
 	}
 
 	blockquote {
@@ -1468,9 +1442,10 @@ input, select, textarea {
 
 	hr {
 		border: 0;
-		border-top: solid 1px #ddd;
-		padding: 1.5em 0 0 0;
-		margin: 1.75em 0 0 0;
+		height: 1px;
+		background: linear-gradient(90deg, var(--ember), var(--teal) 55%, transparent);
+		opacity: 0.7;
+		margin: 2.5em 0 0.5em 0;
 	}
 
 	sub {
@@ -1589,7 +1564,7 @@ input, select, textarea {
 
 		header > p {
 			margin: 0.5em 0 0 0;
-			color: #aaa;
+			color: var(--text);
 		}
 
 		@media screen and (max-width: 736px) {
@@ -1764,8 +1739,11 @@ input, select, textarea {
 		}
 
 	li::marker {
-		content: ">"
+		content: ">  ";
+		font-family: var(--font-mono);
+		color: var(--ember);
 	}
+
 /* Actions */
 
 	ul.actions {
@@ -1850,8 +1828,7 @@ input, select, textarea {
 			line-height: 0.9em;
 			font-size: 2.5em;
 			margin: 0 0.25em 0 0.25em;
-			opacity: 0.35;
-			outline: 0;
+			opacity: 0.5;
 			-moz-transition: opacity .25s ease-in-out;
 			-webkit-transition: opacity .25s ease-in-out;
 			-ms-transition: opacity .25s ease-in-out;
@@ -1873,7 +1850,7 @@ input, select, textarea {
 				left: 50%;
 				bottom: -0.75em;
 				margin-left: -0.5em;
-				border-bottom: solid 0em #ffffff;
+				border-bottom: solid 0em var(--ember);
 				border-left: solid 0.5em transparent;
 				border-right: solid 0.5em transparent;
 				-moz-transition: border-bottom-width .25s ease-in-out;
@@ -1913,7 +1890,8 @@ input, select, textarea {
 					border-right: solid 0.6em transparent;
 				}
 
-			#nav a:hover {
+			#nav a:hover,
+			#nav a:focus-visible {
 				opacity: 1.0;
 			}
 
@@ -1923,6 +1901,7 @@ input, select, textarea {
 
 			#nav a.active {
 				opacity: 1.0;
+				color: var(--ember-bright);
 			}
 
 				#nav a.active:after {
@@ -2214,125 +2193,6 @@ input, select, textarea {
 						}
 
 				}
-/* Gallery CSS */
-* {
-	margin: 0;
-	padding: 0;
-  }
-  body {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	min-height: 100vh;
-  }
-  .container {
-	position: relative;
-	width: 1160px;
-	display: flex;
-	justify-content: center;
-	flex-wrap: wrap;
-	transform-style: preserve-3d;
-	perspective: 500px;
-	margin: auto;
-	cursor: pointer;
-  }
-  .container .box {
-	position: relative;
-	width: 275px;
-	height: 275px;
-	background: #000;
-	transition: 0.5s;
-	transform-style: preserve-3d;
-	overflow: hidden;
-	margin-right: 15px;
-	margin-top: 45px;
-  }
-  .container:hover .box {
-	transform: rotateY(25deg);
-  }
-  .container .box:hover ~ .box {
-	transform: rotateY(-25deg);
-  }
-  .container .box:hover {
-	transform: rotateY(0deg) scale(1.25);
-	z-index: 1;
-	box-shadow: 0 25px 40px rgba(0,0,0,0.5);
-  }
-  .container .box .imgBx {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-  }
-  .container .box .imgBx:before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background: linear-gradient(180deg,rgb(211, 97, 20),#000);
-	z-index: 1;
-	opacity: 0;
-	transition: 0.5s;
-	mix-blend-mode: multiply;
-  }
-  .container .box:hover .imgBx:before {
-	opacity: 1;
-  }
-  .container .box .imgBx img {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-  }
-  .container .box .content {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	z-index: 1;
-	display: flex;
-	padding: 25px;
-	align-items: flex-end;
-	box-sizing: border-box;
-  }
-  .container .box .content h2 {
-	color: #fff;
-	transition: 0.5s;
-	text-transform: uppercase;
-	margin-bottom: 5px;
-	font-size: 20px;
-	transform: translateY(200px);
-	transition-delay: 0.3s;
-  }
-  .container .box:hover .content h2 {
-	transform: translateY(0px);
-  }
-  .container .box .content p {
-	color: #fff;
-	transition: 0.5s;
-	font-size: 14px;
-	transform: translateY(200px);
-	transition-delay: 0.4s;
-  }
-  .container .box:hover .content p {
-	transform: translateY(0px);
-  }
-
-.link {
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	top: 0;
-	left: 0;
-	z-index: 1;
-  }
-
 /* Footer */
 
 	#footer {
