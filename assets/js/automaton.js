@@ -10,6 +10,7 @@
 	- Mouse movement (or a tap) seeds new cells.
 	- New patches are sprinkled in now and then so the board never dies out.
 	- With prefers-reduced-motion, a single still frame is drawn instead.
+	- The button in the bottom-right corner pauses and resumes it.
 */
 
 (function () {
@@ -283,9 +284,34 @@
 			present(1);
 		}
 
+	// Pause / play button (bottom-right). The choice is remembered per browser.
+		var toggle = document.getElementById('bg-toggle'),
+			userPaused = false;
+
+		try { userPaused = window.localStorage.getItem('bg-paused') === '1'; } catch (e) {}
+
+		function updateToggle() {
+			if (!toggle) return;
+			var label = userPaused ? 'Play background animation' : 'Pause background animation';
+			toggle.hidden = !!(motion && motion.matches);   // nothing to pause with reduced motion
+			toggle.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
+			toggle.setAttribute('aria-label', label);
+			toggle.title = label;
+			toggle.classList.toggle('is-paused', userPaused);
+		}
+
+		if (toggle)
+			toggle.addEventListener('click', function () {
+				userPaused = !userPaused;
+				try { window.localStorage.setItem('bg-paused', userPaused ? '1' : '0'); } catch (e) {}
+				applyMotionPreference();
+			});
+
 		function applyMotionPreference() {
 			if (motion && motion.matches) still();
+			else if (userPaused) stop();
 			else start();
+			updateToggle();
 		}
 
 	// Interaction: the cursor (or a tap) plants new cells.

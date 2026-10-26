@@ -49,9 +49,16 @@
 
 	}
 
-	/* Rainbow tagline: the colours sweep in when the home panel is shown. */
-	.tagline {
+	/* Rainbow tagline (links to Projects). The colours sweep in when the home panel is
+	   shown, fan out on hover, and sweep back in when the pointer leaves. */
+	.tagline-wrap {
 		margin-top: 1em;
+	}
+
+	.tagline {
+		display: inline-block;
+		text-decoration: none;
+		cursor: pointer;
 		background-color: #CA4246;
 		background-image: linear-gradient(
 			45deg,
@@ -74,10 +81,21 @@
 		animation: tagline-sweep 1.75s ease forwards;
 	}
 
+		.tagline:hover,
+		.tagline:focus-visible {
+			animation: tagline-fan 1.5s ease-in forwards;
+		}
+
 	@keyframes tagline-sweep {
 		0%   { background-size: 650%; }
 		40%  { background-size: 650%; }
 		100% { background-size: 100%; }
+	}
+
+	@keyframes tagline-fan {
+		0%   { background-size: 100%; }
+		80%  { background-size: 650%; }
+		100% { background-size: 650%; }
 	}
 
 /* CV */
@@ -92,9 +110,33 @@
 		margin: 2em 0 0.75em 0;
 	}
 
-	#cv header {
+	#cv .cv-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 0.75em 1.5em;
 		margin-bottom: 0;
 	}
+
+	.cv-download {
+		font-family: var(--font-mono);
+		font-size: 0.65em;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		text-decoration: none;
+		color: var(--ink);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		padding: 0.55em 1.1em;
+		transition: border-color 0.25s ease, color 0.25s ease, background-color 0.25s ease;
+	}
+
+		.cv-download:hover,
+		.cv-download:focus-visible {
+			border-color: var(--ember);
+			background-color: rgba(213, 81, 55, 0.12);
+			color: #fff;
+		}
 
 	#cv .cv-skills p {
 		margin-bottom: 0.75em;
@@ -152,119 +194,149 @@
 			margin-bottom: 0;
 		}
 
-/* Work gallery (panel currently hidden from the nav) */
+/* Projects */
 
-	#work .gallery {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
-		gap: 1em;
-		perspective: 500px;
-		transform-style: preserve-3d;
+	#projects header {
+		text-align: center;
+		margin-bottom: 1.5em;
 	}
 
-		#work .gallery .box {
-			position: relative;
-			aspect-ratio: 1 / 1;
-			background: #000;
-			overflow: hidden;
-			transform-style: preserve-3d;
-			transition: transform 0.5s, box-shadow 0.5s;
+	/* Compact rows: small thumbnail on the left, text on the right. */
+	.projects-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.75em;
+	}
+
+	.project {
+		display: flex;
+		align-items: stretch;
+		gap: 1.1em;
+		padding: 0.75em;
+		background: #0d0d0b;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		color: var(--text);
+		text-decoration: none;
+		transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+	}
+
+		.project:hover,
+		.project:focus-visible {
+			transform: translateY(-2px);
+			border-color: rgba(213, 81, 55, 0.7);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(213, 81, 55, 0.3);
 		}
 
-		#work .gallery .imgBx,
-		#work .gallery .imgBx img,
-		#work .gallery .content,
-		#work .gallery .link {
-			position: absolute;
-			inset: 0;
+	.project-media {
+		flex: 0 0 8.5em;
+		align-self: center;
+		aspect-ratio: 4 / 3;
+		overflow: hidden;
+		background: #000;
+	}
+
+		.project-media img {
+			display: block;
 			width: 100%;
 			height: 100%;
-		}
-
-		#work .gallery .imgBx img {
 			object-fit: cover;
+			transition: transform 0.5s ease;
 		}
 
-		#work .gallery .imgBx:before {
-			content: '';
-			position: absolute;
-			inset: 0;
-			background: linear-gradient(180deg, var(--ember), #000);
-			mix-blend-mode: multiply;
-			z-index: 1;
-			opacity: 0;
-			transition: opacity 0.5s;
-		}
-
-		#work .gallery .content {
-			z-index: 1;
-			display: flex;
-			align-items: flex-end;
-			padding: 1em;
-		}
-
-			#work .gallery .content h2 {
-				color: #fff;
-				font-size: 0.9em;
-				text-align: left;
-				text-transform: uppercase;
-				margin: 0 0 0.25em 0;
-				transform: translateY(12em);
-				transition: transform 0.5s 0.3s;
+			.project-media img.pos-top {
+				object-position: center 12%;
 			}
 
-			#work .gallery .content p {
-				color: #fff;
-				font-size: 0.65em;
-				line-height: 1.5;
-				margin: 0;
-				transform: translateY(12em);
-				transition: transform 0.5s 0.4s;
-			}
-
-		#work .gallery .link {
-			z-index: 2;
+		.project:hover .project-media img,
+		.project:focus-visible .project-media img {
+			transform: scale(1.05);
 		}
 
-		/* 3D fan effect, only for devices that can hover. */
-		@media (hover: hover) {
+	.project-body {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 auto;
+		min-width: 0;
+		gap: 0.25em;
+		line-height: 1.45;
+		padding: 0.1em 0.25em 0.1em 0;
+	}
 
-			#work .gallery:hover .box { transform: rotateY(25deg); }
-			#work .gallery .box:hover ~ .box { transform: rotateY(-25deg); }
-			#work .gallery .box:hover {
-				transform: rotateY(0deg) scale(1.1);
-				z-index: 3;
-				box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5);
-			}
+	.project-tag {
+		font-family: var(--font-mono);
+		font-size: 0.55em;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--ember-bright);
+	}
 
+	.project-title {
+		font-size: 0.95em;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		color: var(--ink);
+	}
+
+	.project-desc {
+		font-size: 0.68em;
+		color: var(--text);
+	}
+
+	.project-cta {
+		margin-top: auto;
+		padding-top: 0.35em;
+		font-family: var(--font-mono);
+		font-size: 0.55em;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--teal);
+	}
+
+		.project-arrow {
+			display: inline-block;
+			transition: transform 0.3s ease;
 		}
 
-		#work .gallery .box:hover .imgBx:before,
-		#work .gallery .box:focus-within .imgBx:before {
-			opacity: 1;
+		.project:hover .project-cta,
+		.project:focus-visible .project-cta {
+			color: var(--ink);
 		}
 
-		#work .gallery .box:hover .content h2,
-		#work .gallery .box:hover .content p,
-		#work .gallery .box:focus-within .content h2,
-		#work .gallery .box:focus-within .content p {
-			transform: translateY(0);
+		.project:hover .project-arrow,
+		.project:focus-visible .project-arrow {
+			transform: translateX(0.35em);
 		}
 
-		/* Touch screens can't hover, so show the captions all the time. */
-		@media (hover: none) {
+	@media screen and (max-width: 736px) {
 
-			#work .gallery .imgBx:before { opacity: 0.85; }
-			#work .gallery .content h2,
-			#work .gallery .content p { transform: none; }
-
+		.project {
+			gap: 0.85em;
+			padding: 0.65em;
 		}
+
+		.project-media {
+			flex-basis: 5.5em;
+			aspect-ratio: 1 / 1;
+			align-self: flex-start;
+		}
+
+	}
+
+	/* Music, at the bottom of the Projects panel */
+	#projects hr {
+		margin: 2em 0 0 0;
+	}
+
+	.projects-music .cv-label {
+		margin-top: 1.5em;
+	}
+
+	.projects-music .sc-card {
+		max-width: none;
+		margin: 0;
+	}
 
 /* Music */
-
-	#music {
-		text-align: center;
-	}
 
 	.sc-card {
 		display: flex;
@@ -288,36 +360,57 @@
 			transform: translateY(-2px);
 		}
 
-	/* Little equaliser that bobs along. */
-	.sc-bars {
-		display: flex;
-		align-items: flex-end;
-		gap: 3px;
-		height: 2.2em;
+	/* A slow, gently scrolling sound wave. */
+	.sc-wave {
+		display: block;
 		flex: 0 0 auto;
+		width: 3.6em;
+		height: 2em;
+		overflow: hidden;
+		-webkit-mask-image: linear-gradient(to right, transparent, #000 22%, #000 78%, transparent);
+		mask-image: linear-gradient(to right, transparent, #000 22%, #000 78%, transparent);
 	}
 
-		.sc-bars i {
-			display: block;
-			width: 4px;
-			height: 100%;
-			background: linear-gradient(to top, var(--ember), var(--gold));
-			transform-origin: bottom;
-			transform: scaleY(0.35);
-			animation: sc-bounce 1.4s ease-in-out infinite;
+		.sc-wave path {
+			fill: none;
+			stroke-linecap: round;
+			vector-effect: non-scaling-stroke;
 		}
 
-		.sc-bars i:nth-child(2) { animation-delay: -0.9s; animation-duration: 1.1s; }
-		.sc-bars i:nth-child(3) { animation-delay: -0.3s; animation-duration: 1.6s; }
-		.sc-bars i:nth-child(4) { animation-delay: -1.2s; animation-duration: 1.2s; background: linear-gradient(to top, var(--teal-deep), var(--teal)); }
-		.sc-bars i:nth-child(5) { animation-delay: -0.6s; animation-duration: 1.5s; }
-		.sc-bars i:nth-child(6) { animation-delay: -1.0s; animation-duration: 1.3s; }
-		.sc-bars i:nth-child(7) { animation-delay: -0.2s; animation-duration: 1.7s; }
+		.sc-wave-a {
+			stroke: var(--ember-bright);
+			stroke-width: 2;
+			animation: sc-wave-a 5s linear infinite;
+		}
 
-	@keyframes sc-bounce {
-		0%, 100% { transform: scaleY(0.3); }
-		50%      { transform: scaleY(1); }
-	}
+		.sc-wave-b {
+			stroke: var(--teal);
+			stroke-width: 1.5;
+			opacity: 0.55;
+			animation: sc-wave-b 7s linear infinite;
+		}
+
+		/* Each wave slides exactly one period, so the loop is seamless. */
+		@keyframes sc-wave-a {
+			from { transform: translateX(0); }
+			to   { transform: translateX(-60px); }
+		}
+
+		@keyframes sc-wave-b {
+			from { transform: translateX(0); }
+			to   { transform: translateX(-40px); }
+		}
+
+		.sc-card:hover .sc-wave-a,
+		.sc-card:focus-visible .sc-wave-a {
+			animation-duration: 3s;
+		}
+
+		.sc-card:hover .sc-wave-b,
+		.sc-card:focus-visible .sc-wave-b {
+			animation-duration: 4.5s;
+			opacity: 0.8;
+		}
 
 	.sc-text {
 		display: flex;
@@ -343,6 +436,10 @@
 			line-height: 1.2;
 			letter-spacing: -0.02em;
 		}
+
+	.sc-logo {
+		width: 1.25em;
+	}
 
 	.sc-go {
 		display: flex;
@@ -380,7 +477,7 @@
 			letter-spacing: 0.08em;
 		}
 
-		.sc-go .icon {
+		.sc-go .sc-logo {
 			display: none;
 		}
 
@@ -415,9 +512,70 @@
 		text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 	}
 
+/* Background pause / play button */
+
+	.bg-toggle {
+		position: fixed;
+		right: 1rem;
+		bottom: 1rem;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.4rem;
+		height: 2.4rem;
+		padding: 0;
+		border: 1px solid rgba(255, 255, 255, 0.18);
+		border-radius: 50%;
+		background: rgba(11, 11, 9, 0.7);
+		color: var(--muted);
+		cursor: pointer;
+		opacity: 0.7;
+		transition: opacity 0.25s ease, color 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+	}
+
+		.bg-toggle[hidden] {
+			display: none;
+		}
+
+		/* On phones the panels fill the width, so sit in the footer instead of floating over text. */
+		@media screen and (max-width: 736px) {
+
+			.bg-toggle {
+				position: static;
+				margin: 1em auto 0 auto;
+				width: 2.2rem;
+				height: 2.2rem;
+			}
+
+		}
+
+		.bg-toggle:hover,
+		.bg-toggle:focus-visible {
+			opacity: 1;
+			color: var(--ink);
+			border-color: var(--ember);
+			background-color: rgba(11, 11, 9, 0.9);
+		}
+
+		.bg-toggle .ico {
+			width: 0.85rem;
+			height: 0.85rem;
+		}
+
+		.bg-toggle .ico-play,
+		.bg-toggle.is-paused .ico-pause {
+			display: none;
+		}
+
+		.bg-toggle.is-paused .ico-play {
+			display: inline-block;
+		}
+
 /* Keyboard focus */
 
-	a:focus-visible {
+	a:focus-visible,
+	button:focus-visible {
 		outline: 2px solid var(--ember-bright);
 		outline-offset: 3px;
 	}
@@ -426,25 +584,38 @@
 
 	@media (prefers-reduced-motion: reduce) {
 
-		.tagline {
+		.tagline,
+		.tagline:hover,
+		.tagline:focus-visible {
 			animation: none;
 		}
 
-		.sc-bars i {
+		.sc-wave path,
+		.sc-card:hover .sc-wave path {
 			animation: none;
 		}
-
-		.sc-bars i:nth-child(odd) { transform: scaleY(0.6); }
 
 		.sc-card,
 		.sc-arrow {
 			transition: none;
 		}
 
-		#work .gallery .box,
-		#work .gallery .content h2,
-		#work .gallery .content p {
+		.project,
+		.project-media img,
+		.project-arrow,
+		.cv-download,
+		.bg-toggle {
 			transition: none;
+		}
+
+		.project:hover,
+		.project:focus-visible {
+			transform: none;
+		}
+
+		.project:hover .project-media img,
+		.project:focus-visible .project-media img {
+			transform: none;
 		}
 
 	}
