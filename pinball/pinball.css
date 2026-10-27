@@ -1,0 +1,295 @@
+/* Pinball prototype for eliarbogast.com: retro 3D-pinball + VHS styling */
+
+@font-face {
+	font-family: 'VT323';
+	src: url("fonts/vt323.woff2") format("woff2");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Press Start 2P';
+	src: url("fonts/press-start-2p.woff2") format("woff2");
+	font-display: swap;
+}
+
+:root {
+	--bg: #07060a;
+	--ember: #e8704f;
+	--teal: #4fb7b6;
+	--ink: #f2ede4;
+	--muted: #8d867c;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html, body {
+	margin: 0;
+	height: 100%;
+	background: var(--bg);
+	color: var(--ink);
+	font-family: 'VT323', ui-monospace, monospace;
+	font-size: 20px;
+	overflow: hidden;
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* Game screen */
+
+.stage {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.crt {
+	position: relative;
+	line-height: 0;
+	box-shadow: 0 0 0 2px #15121a, 0 0 60px rgba(232, 112, 79, 0.08), 0 30px 80px rgba(0, 0, 0, 0.8);
+	animation: flicker 6s infinite steps(1);
+}
+
+#screen {
+	display: block;
+	image-rendering: auto;          /* soft upscale = smeary tape look */
+	filter: saturate(1.08) contrast(1.05);
+}
+
+/* Scanlines + vignette at full display resolution, over the canvas */
+.crt::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.22) 3px, rgba(0, 0, 0, 0) 4px),
+		radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.55) 100%);
+	mix-blend-mode: multiply;
+}
+
+@keyframes flicker {
+	0%, 100% { opacity: 1; }
+	47%      { opacity: 0.985; }
+	48%      { opacity: 1; }
+	83%      { opacity: 0.975; }
+	84%      { opacity: 1; }
+}
+
+/* Links */
+
+.skip {
+	position: fixed;
+	top: 10px;
+	left: 12px;
+	z-index: 5;
+	color: var(--muted);
+	text-decoration: none;
+	font-size: 18px;
+}
+
+	.skip:hover,
+	.skip:focus-visible {
+		color: var(--ink);
+	}
+
+.plain {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 8px;
+	z-index: 5;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+	font-size: 18px;
+	color: var(--muted);
+	pointer-events: none;
+}
+
+	.plain a,
+	.plain button {
+		pointer-events: auto;
+		color: var(--teal);
+		text-decoration: none;
+		background: none;
+		border: 0;
+		padding: 0;
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.plain a:hover,
+	.plain button:hover,
+	.plain a:focus-visible,
+	.plain button:focus-visible {
+		color: var(--ink);
+	}
+
+/* Info card: a chunky beveled "file viewer" window */
+
+.card {
+	position: absolute;
+	z-index: 10;
+	width: min(440px, 92vw);
+	max-height: 82vh;
+	display: flex;
+	flex-direction: column;
+	background: #17131d;
+	color: var(--ink);
+	border: 2px solid;
+	border-color: #6a6170 #0a080c #0a080c #6a6170;
+	box-shadow: 0 0 0 1px #000, 8px 10px 0 rgba(0, 0, 0, 0.55);
+	font-size: 21px;
+	line-height: 1.15;
+	animation: card-in 0.18s steps(4) both;
+}
+
+	.card[hidden] {
+		display: none;
+	}
+
+@keyframes card-in {
+	from { transform: scale(0.6, 0.05); opacity: 0.4; }
+	to   { transform: none; opacity: 1; }
+}
+
+.card-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 4px 6px 4px 10px;
+	background: linear-gradient(90deg, #a83a2a, #d55137 45%, #2f7f7c);
+	color: #fff;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 10px;
+	letter-spacing: 0.06em;
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.card-x {
+	width: 22px;
+	height: 20px;
+	padding: 0;
+	font: 16px/1 'VT323', monospace;
+	color: #000;
+	background: #c9c2cc;
+	border: 2px solid;
+	border-color: #fff #4b4450 #4b4450 #fff;
+	cursor: pointer;
+}
+
+.card-body {
+	padding: 14px 16px 6px 16px;
+	overflow-y: auto;
+}
+
+	.card-body h2 {
+		margin: 0 0 4px 0;
+		font-family: 'Press Start 2P', monospace;
+		font-size: 13px;
+		line-height: 1.5;
+		color: #ffd9a8;
+		text-shadow: 2px 0 rgba(255, 60, 60, 0.35), -2px 0 rgba(60, 200, 255, 0.35);
+	}
+
+	.card-body .tag {
+		color: var(--ember);
+		font-size: 18px;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+
+	.card-body p {
+		margin: 6px 0;
+	}
+
+	.card-body img {
+		display: block;
+		width: 100%;
+		max-height: 150px;
+		object-fit: cover;
+		margin: 8px 0;
+		border: 2px solid #000;
+		image-rendering: pixelated;
+		filter: saturate(0.85) contrast(1.1) sepia(0.15);
+	}
+
+	.card-body ul {
+		margin: 4px 0;
+		padding-left: 0;
+		list-style: none;
+	}
+
+		.card-body li {
+			margin: 7px 0;
+		}
+
+		.card-body li .org {
+			display: block;
+			color: var(--teal);
+			font-size: 18px;
+		}
+
+	.card-body a {
+		color: var(--teal);
+	}
+
+		.card-body a:hover,
+		.card-body a:focus-visible {
+			color: var(--ink);
+		}
+
+	.card-body .counter {
+		color: var(--muted);
+		font-size: 17px;
+	}
+
+.card-foot {
+	display: flex;
+	justify-content: flex-end;
+	padding: 6px 12px 12px 12px;
+}
+
+.card-go {
+	font: 20px 'VT323', monospace;
+	color: #000;
+	background: #c9c2cc;
+	border: 2px solid;
+	border-color: #fff #4b4450 #4b4450 #fff;
+	padding: 3px 12px;
+	cursor: pointer;
+}
+
+	.card-go:active,
+	.card-x:active {
+		border-color: #4b4450 #fff #fff #4b4450;
+	}
+
+	.card-go .key {
+		color: #5b5360;
+		font-size: 16px;
+	}
+
+button:focus-visible,
+a:focus-visible {
+	outline: 2px solid var(--ember);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.crt,
+	.card {
+		animation: none;
+	}
+
+}
