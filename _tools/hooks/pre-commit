@@ -1,0 +1,27 @@
+#!/bin/sh
+# Pre-commit hook for eliarbogast.com
+# Updates the ?v= cache-busting versions on stylesheets/scripts and adds the
+# updated pages to the commit. Installed with:  git config core.hooksPath _tools/hooks
+
+ROOT="$(git rev-parse --show-toplevel)" || exit 0
+cd "$ROOT" || exit 0
+
+if ! command -v python3 >/dev/null 2>&1; then
+	echo "pre-commit: python3 not found, skipping asset version stamping" >&2
+	exit 0
+fi
+
+python3 _tools/stamp_assets.py >/dev/null || {
+	echo "pre-commit: stamp_assets.py failed" >&2
+	exit 1
+}
+
+# Stage the pages if their versions changed.
+for page in index.html pinball/index.html; do
+	if ! git diff --quiet -- "$page"; then
+		git add -- "$page"
+		echo "pre-commit: updated asset versions in $page"
+	fi
+done
+
+exit 0
