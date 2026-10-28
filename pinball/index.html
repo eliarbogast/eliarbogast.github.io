@@ -7,7 +7,7 @@
 	<meta name="theme-color" content="#07060a" />
 	<link rel="preload" href="fonts/vt323.woff2" as="font" type="font/woff2" crossorigin />
 	<link rel="preload" href="fonts/press-start-2p.woff2" as="font" type="font/woff2" crossorigin />
-	<link rel="stylesheet" href="pinball.css?v=8d4b3d31" />
+	<link rel="stylesheet" href="pinball.css?v=c587d568" />
 </head>
 <body>
 
@@ -15,19 +15,16 @@
 
 	<main class="stage" id="stage">
 		<div class="crt" id="crt">
-			<canvas id="screen" width="480" height="360" aria-label="Pinball game. Use A and D (or the left and right arrow keys) for the flippers, and hold Space to launch."></canvas>
-		</div>
+			<canvas id="screen" width="480" height="360" aria-label="Pinball game. Use A and D (or the left and right arrow keys) for the flippers, hold Space to launch, and Shift to nudge."></canvas>
 
-		<!-- Info card shown when the ball hits a feature (filled in by pinball.js) -->
-		<div class="card" id="card" role="dialog" aria-modal="true" aria-labelledby="card-title" hidden>
-			<div class="card-bar">
-				<span class="card-title" id="card-title">PROJECTS.TXT</span>
-				<button type="button" class="card-x" id="card-x" aria-label="Close">&times;</button>
-			</div>
-			<div class="card-body" id="card-body"></div>
-			<div class="card-foot">
-				<button type="button" class="card-go" id="card-go">CONTINUE &#9654; <span class="key">SPACE</span></button>
-			</div>
+			<!-- Small info panel for unlocked features; never pauses the game (filled in by pinball.js) -->
+			<aside class="info" id="info" aria-live="polite" hidden>
+				<div class="info-bar">
+					<span id="info-title">INFO</span>
+					<button type="button" class="info-x" id="info-x" aria-label="Close">&times;</button>
+				</div>
+				<div class="info-body" id="info-body"></div>
+			</aside>
 		</div>
 	</main>
 
@@ -39,6 +36,6 @@
 		<button type="button" id="mute">Sound: on</button>
 	</nav>
 
-	<script src="pinball.js?v=809fcf92"></script>
+	<script src="pinball.js?v=5b3ea2fc"></script>
 </body>
 </html>

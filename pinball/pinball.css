@@ -133,151 +133,102 @@ html, body {
 		color: var(--ink);
 	}
 
-/* Info card: a chunky beveled "file viewer" window */
+/* Info panel: a small beveled window over the score panel. It never pauses the game. */
 
-.card {
+.info {
 	position: absolute;
-	z-index: 10;
-	width: min(440px, 92vw);
-	max-height: 82vh;
+	z-index: 4;
+	right: 1.5%;
+	bottom: 3%;
+	width: 35%;
+	max-height: 58%;
 	display: flex;
 	flex-direction: column;
-	background: #17131d;
+	background: rgba(23, 19, 29, 0.94);
 	color: var(--ink);
 	border: 2px solid;
 	border-color: #6a6170 #0a080c #0a080c #6a6170;
-	box-shadow: 0 0 0 1px #000, 8px 10px 0 rgba(0, 0, 0, 0.55);
-	font-size: 21px;
+	box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.5);
+	font-size: 16px;
 	line-height: 1.15;
-	animation: card-in 0.18s steps(4) both;
 }
 
-	.card[hidden] {
+	.info[hidden] {
 		display: none;
 	}
 
-@keyframes card-in {
-	from { transform: scale(0.6, 0.05); opacity: 0.4; }
+	.info.in {
+		animation: info-in 0.2s steps(4) both;
+	}
+
+	/* Phones: over the backglass, clear of the flippers. */
+	.crt.portrait .info {
+		left: 3%;
+		right: 3%;
+		top: 13.5%;
+		bottom: auto;
+		width: auto;
+		max-height: 20%;
+	}
+
+@keyframes info-in {
+	from { transform: translateX(20%); opacity: 0; }
 	to   { transform: none; opacity: 1; }
 }
 
-.card-bar {
+.info-bar {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 8px;
-	padding: 4px 6px 4px 10px;
+	padding: 0.2em 0.3em 0.2em 0.5em;
 	background: linear-gradient(90deg, #a83a2a, #d55137 45%, #2f7f7c);
 	color: #fff;
 	font-family: 'Press Start 2P', monospace;
-	font-size: 10px;
+	font-size: 0.5em;
 	letter-spacing: 0.06em;
-	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
+	line-height: 1.8;
 }
 
-.card-x {
-	width: 22px;
-	height: 20px;
-	padding: 0;
-	font: 16px/1 'VT323', monospace;
-	color: #000;
-	background: #c9c2cc;
-	border: 2px solid;
-	border-color: #fff #4b4450 #4b4450 #fff;
+.info-x {
+	padding: 0 0.4em;
+	font: 1.6em/1 'VT323', monospace;
+	color: #fff;
+	background: none;
+	border: 0;
 	cursor: pointer;
 }
 
-.card-body {
-	padding: 14px 16px 6px 16px;
+.info-body {
+	padding: 0.4em 0.6em 0.5em 0.6em;
 	overflow-y: auto;
 }
 
-	.card-body h2 {
-		margin: 0 0 4px 0;
+	.info-body h2 {
+		margin: 0.1em 0 0.2em 0;
 		font-family: 'Press Start 2P', monospace;
-		font-size: 13px;
+		font-size: 0.6em;
 		line-height: 1.5;
 		color: #ffd9a8;
-		text-shadow: 2px 0 rgba(255, 60, 60, 0.35), -2px 0 rgba(60, 200, 255, 0.35);
 	}
 
-	.card-body .tag {
+	.info-body .tag {
 		color: var(--ember);
-		font-size: 18px;
+		font-size: 0.85em;
 		text-transform: uppercase;
-		letter-spacing: 0.06em;
 	}
 
-	.card-body p {
-		margin: 6px 0;
+	.info-body p {
+		margin: 0.25em 0;
 	}
 
-	.card-body img {
-		display: block;
-		width: 100%;
-		max-height: 150px;
-		object-fit: cover;
-		margin: 8px 0;
-		border: 2px solid #000;
-		image-rendering: pixelated;
-		filter: saturate(0.85) contrast(1.1) sepia(0.15);
-	}
-
-	.card-body ul {
-		margin: 4px 0;
-		padding-left: 0;
-		list-style: none;
-	}
-
-		.card-body li {
-			margin: 7px 0;
-		}
-
-		.card-body li .org {
-			display: block;
-			color: var(--teal);
-			font-size: 18px;
-		}
-
-	.card-body a {
+	.info-body a {
 		color: var(--teal);
 	}
 
-		.card-body a:hover,
-		.card-body a:focus-visible {
+		.info-body a:hover,
+		.info-body a:focus-visible {
 			color: var(--ink);
 		}
-
-	.card-body .counter {
-		color: var(--muted);
-		font-size: 17px;
-	}
-
-.card-foot {
-	display: flex;
-	justify-content: flex-end;
-	padding: 6px 12px 12px 12px;
-}
-
-.card-go {
-	font: 20px 'VT323', monospace;
-	color: #000;
-	background: #c9c2cc;
-	border: 2px solid;
-	border-color: #fff #4b4450 #4b4450 #fff;
-	padding: 3px 12px;
-	cursor: pointer;
-}
-
-	.card-go:active,
-	.card-x:active {
-		border-color: #4b4450 #fff #fff #4b4450;
-	}
-
-	.card-go .key {
-		color: #5b5360;
-		font-size: 16px;
-	}
 
 button:focus-visible,
 a:focus-visible {
@@ -288,7 +239,7 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
 
 	.crt,
-	.card {
+	.info.in {
 		animation: none;
 	}
 

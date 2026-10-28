@@ -8,13 +8,13 @@
 	  row-by-row in perspective (SNES "mode 7" style) so we look at the machine from the
 	  front at an angle. Walls, bumpers, flippers and the ball are extruded/projected on top.
 	- Look: low-res canvas, chunky pixels, synth sounds, then a VHS pass (chroma bleed,
-	  tape noise, tracking band, head-switching jitter) plus CSS scanlines.
-	- Content: hitting features opens cards filled from the main site's index.html,
-	  so the game never goes out of date.
+	  tape noise, head-switching jitter) plus CSS scanlines.
+	- Content: features show small, non-blocking info panels and promotions on the
+	  backglass, filled from the main site's index.html so the game never goes out of date.
 
-	Controls: A or ← = left flipper, D or → = right flipper,
-	hold Space / ↓ = plunger, M = mute, Esc = close card. On touch: left / right half of
-	the screen; hold the right half while the ball is in the lane to launch.
+	Controls: A or ← = left flipper, D or → = right flipper, hold Space / ↓ = plunger,
+	Shift = nudge (careful: TILT), M = mute. On touch: left / right half of the screen;
+	hold the right half while the ball is in the lane to launch.
 */
 
 (function () {
@@ -110,7 +110,7 @@
 		});
 
 	// "Glider": a Game of Life glider that drifts across the upper playfield. Hit it!
-		const glider = { x: 182, y: 148, vx: 55, r: 15, minX: 145, maxX: 220, phase: 0, flash: 0, cooldown: 0 };
+		const glider = { x: 182, y: 148, vx: 55, r: 15, minX: 145, maxX: 220, phase: 0, flash: 0, cooldown: 0, hits: 0 };
 		const GLIDER_PHASES = [
 			[[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]],
 			[[0, 1], [2, 1], [1, 2], [2, 2], [1, 3]],
@@ -149,17 +149,47 @@
 	const ball = { x: 362, y: 775, vx: 0, vy: 0, captured: false };
 
 	const game = {
-		mode: 'attract',          // attract | lane | play | card | drained | over
+		mode: 'attract',          // attract | lane | play | drained | over
 		score: 0, ballNum: 1, balls: 3, hi: 0,
 		laneLit: [false, false, false], cvLit: [false, false], projectIndex: 0,
 		plungerCharging: false, plungerPower: 0,
 		saveUntil: 0, stillTime: 0, time: 0, startTime: 0,
 		message: [], messageUntil: 0,
 		popups: [], glitch: 0, shake: 0,
-		bonus: 0, mult: 1, skillLane: -1, skillUntil: 0
+		bonus: 0, mult: 1, skillLane: -1, skillUntil: 0,
+		rank: 0, frenzyUntil: 0, shots: [], nextShot: 0, tiltMeter: 0, tilted: false
 	};
 
-	try { game.hi = parseInt(localStorage.getItem('eli-pinball-hi') || '0', 10) || 0; } catch (e) {}
+	// Top-5 scores, saved in this browser.
+	let topScores = [];
+	try {
+		topScores = JSON.parse(localStorage.getItem('eli-pinball-scores') || '[]');
+		const oldHi = parseInt(localStorage.getItem('eli-pinball-hi') || '0', 10);
+		if (!topScores.length && oldHi) topScores = [{ s: oldHi, d: '' }];
+	} catch (e) { topScores = []; }
+	game.hi = topScores.length ? topScores[0].s : 0;
+
+	function saveScore(score) {
+		const d = new Date();
+		const tag = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][d.getMonth()] + ' ' + d.getDate();
+		const entry = { s: score, d: tag };
+		topScores.push(entry);
+		topScores.sort((a, b) => b.s - a.s);
+		topScores = topScores.slice(0, 5);
+		game.hi = topScores[0].s;
+		try { localStorage.setItem('eli-pinball-scores', JSON.stringify(topScores)); } catch (e) {}
+		return topScores.indexOf(entry) + 1;          // 0 = didn't make the list
+	}
+
+	const frenzy = () => game.time < game.frenzyUntil;
+
+	// Backglass "dot-matrix" messages, shown one at a time.
+	const marquee = { queue: [], cur: null, t: 0 };
+	function backglass(title, sub, secs, urgent) {
+		if (urgent) { marquee.queue = []; marquee.cur = null; }          // big moments interrupt
+		if (marquee.queue.length > 3) marquee.queue.shift();
+		marquee.queue.push({ title, sub: sub || '', secs: secs || 2.5 });
+	}
 
 	const TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 	const LAUNCH_HINT = TOUCH ? 'HOLD RIGHT SIDE' : 'HOLD SPACE';
@@ -170,20 +200,31 @@
 	}
 
 	function idleMessage() {
-		if (game.mode === 'attract') return TOUCH ? ['TAP', 'TO PLAY'] : ['PRESS SPACE', 'TO PLAY'];
+		if (game.mode === 'attract' || game.mode === 'over') {
+			// Alternate the start prompt with the top scores.
+			const slot = Math.floor(game.time / 2.5) % (topScores.length + 1);
+			if (slot === 0 || !topScores.length) return TOUCH ? ['TAP', 'TO PLAY'] : ['PRESS SPACE', 'TO PLAY'];
+			const t = topScores[slot - 1];
+			return ['#' + slot + '  ' + t.s.toLocaleString('en-US'), t.d];
+		}
 		if (game.mode === 'lane') return [LAUNCH_HINT, 'TO LAUNCH'];
+		if (game.tilted) return ['TILT', 'WAIT FOR THE BALL'];
+		if (frenzy()) return ['GLIDER GUN!', Math.ceil(game.frenzyUntil - game.time) + 's  X2 SCORE'];
 		const hints = [
 			['SHOOT THE SAUCER', 'FOR PROJECTS'],
 			['HIT C + V', 'FOR THE CV'],
 			['LIGHT 3 LANES', 'FOR MUSIC'],
 			['DROP E-L-I', 'TO SAY HI'],
-			['CATCH THE GLIDER', '+10,000'],
-			['INLANES RAISE', 'THE BONUS X']
+			['HIT THE GLIDER 3X', 'FOR GLIDER GUN'],
+			['FEATURES EARN', 'PROMOTIONS'],
+			['SHIFT TO NUDGE', "DON'T TILT"]
 		];
 		return hints[Math.floor(game.time / 4) % hints.length];
 	}
 
 	function addScore(points, x, y) {
+		if (game.tilted) return;
+		if (frenzy()) points *= 2;
 		game.score += points;
 		if (x != null) game.popups.push({ x, y, text: String(points), t: 0 });
 	}
@@ -368,7 +409,35 @@
 		addScore(10000, glider.x, glider.y);
 		game.bonus += 2000;
 		Sound.glider();
-		say(['GLIDER CAUGHT!', '+10,000'], 2);
+		if (frenzy()) return;
+		glider.hits++;
+		if (glider.hits >= 3) {
+			glider.hits = 0;
+			game.frenzyUntil = game.time + 20;
+			game.nextShot = game.time;
+			backglass('GLIDER GUN!', 'DOUBLE SCORING FOR 20 SECONDS', 2.8, true);
+			game.messageUntil = 0;                      // let the panel show the countdown
+			Sound.frenzy();
+			promote();
+		} else {
+			say(['GLIDER ' + glider.hits + ' / 3'], 1.8);
+		}
+	}
+
+	// Career ladder: every completed feature promotes you through the CV, oldest role first.
+	function promote() {
+		const ladder = content.cvRoles.slice().reverse();
+		if (!ladder.length) return;
+		if (game.rank >= ladder.length) {
+			addScore(100000, 182, 360);
+			backglass('TOP OF THE LADDER', '+100,000', 2.5);
+			return;
+		}
+		const role = ladder[game.rank];
+		game.rank++;
+		addScore(25000 * game.rank, 182, 360);
+		backglass('PROMOTED!', role.title.toUpperCase() + '  ·  ' + role.org.toUpperCase(), 3.6);
+		Sound.promote();
 	}
 
 	function inlaneHit(s) {
@@ -407,9 +476,11 @@
 			Sound.lane();
 			if (game.laneLit.every(Boolean)) {
 				addScore(25000, 182, 120);
-				Sound.fanfare();
+				Sound.jingle();
 				say(['MUSIC LANES', 'COMPLETE!'], 3);
-				openCard('music', () => { game.laneLit = [false, false, false]; });
+				showInfo('music');
+				promote();
+				setTimeout(() => { game.laneLit = [false, false, false]; }, 1200);
 			}
 		} else {
 			Sound.tick();
@@ -426,8 +497,8 @@
 		if (!game.cvLit[i]) {
 			game.cvLit[i] = true;
 			if (game.cvLit.every(Boolean)) {
-				Sound.fanfare();
-				openCard('cv', () => { game.cvLit = [false, false]; });
+				promote();
+				setTimeout(() => { game.cvLit = [false, false]; }, 1200);
 			}
 		}
 	}
@@ -442,7 +513,9 @@
 			addScore(50000, 300, 350);
 			Sound.fanfare();
 			say(['E-L-I SPELLED!', '+50,000'], 3);
-			openCard('about', () => { setTimeout(() => dropTargets.forEach(t => { t.active = true; }), 600); Sound.reset(); });
+			showInfo('hello');
+			promote();
+			setTimeout(() => { dropTargets.forEach(t => { t.active = true; }); Sound.reset(); }, 1500);
 		}
 	}
 
@@ -454,18 +527,18 @@
 		addScore(25000, s.x, s.y);
 		game.bonus += 3000;
 		Sound.saucer();
+		showInfo('project');
+		promote();
+		// Hold the ball briefly, then kick it back into play (the info panel doesn't pause anything).
 		setTimeout(() => {
-			openCard('project', () => {
-				setTimeout(() => {
-					ball.captured = false;
-					ball.x = s.x + 4; ball.y = s.y - 4;
-					ball.vx = 430; ball.vy = -560;
-					s.inside = true;
-					Sound.kick();
-					game.shake = 3;
-				}, 350);
-			});
-		}, 450);
+			if (!ball.captured) return;
+			ball.captured = false;
+			ball.x = s.x + 4; ball.y = s.y - 4;
+			ball.vx = 430; ball.vy = -560;
+			s.inside = true;
+			Sound.kick();
+			game.shake = 3;
+		}, 1300);
 	}
 
 	function resetBallToLane() {
@@ -476,6 +549,8 @@
 	function startGame() {
 		Sound.unlock();
 		game.score = 0; game.ballNum = 1; game.bonus = 0; game.mult = 1;
+		game.rank = 0; game.frenzyUntil = 0; game.shots = []; glider.hits = 0;
+		game.tiltMeter = 0; game.tilted = false;
 		game.laneLit = [false, false, false]; game.cvLit = [false, false];
 		dropTargets.forEach(t => { t.active = true; });
 		game.startTime = game.time;
@@ -519,8 +594,10 @@
 		game.glitch = 0.9;
 		game.shake = 4;
 		Sound.drain();
-		// End-of-ball bonus.
-		const base = game.bonus, mult = game.mult, bonus = base * mult;
+		// End-of-ball bonus (lost if you tilted).
+		const base = game.tilted ? 0 : game.bonus, mult = game.mult, bonus = base * mult;
+		game.tilted = false; game.tiltMeter = 0;
+		game.frenzyUntil = 0; game.shots = [];
 		if (bonus > 0) {
 			setTimeout(() => {
 				game.score += bonus;
@@ -541,17 +618,38 @@
 
 	function gameOver() {
 		game.mode = 'over';
-		if (game.score > game.hi) {
-			game.hi = game.score;
-			try { localStorage.setItem('eli-pinball-hi', String(game.hi)); } catch (e) {}
-		}
+		game.place = game.score > 0 ? saveScore(game.score) : 0;
 		Sound.gameOver();
-		say(['GAME OVER'], 4);
-		openCard('over', () => {
+		say(['GAME OVER'], 3);
+		backglass('GAME OVER', game.place ? 'NEW #' + game.place + ' SCORE!' : 'THANKS FOR PLAYING', 3, true);
+		showInfo('over');
+		setTimeout(() => {
+			if (game.mode !== 'over') return;
 			game.mode = 'attract';
 			resetBallToLane();
 			game.mode = 'attract';
-		});
+		}, 3000);
+	}
+
+	// Nudge: bump the table. Too many in a row and you TILT (flippers die until the ball drains).
+	function nudge() {
+		if (game.mode !== 'play' || game.tilted || ball.captured) return;
+		ball.vy -= 220;
+		ball.vx += (Math.random() - 0.5) * 160;
+		game.shake = 5;
+		game.glitch = Math.max(game.glitch, 0.15);
+		game.tiltMeter += 1;
+		Sound.nudge();
+		if (game.tiltMeter >= 3.5) {
+			game.tilted = true;
+			flipL.pressed = flipR.pressed = false;
+			game.glitch = 1.4;
+			backglass('TILT', 'FLIPPERS OFF UNTIL THE BALL DRAINS', 3, true);
+			Sound.tilt();
+		} else if (game.tiltMeter >= 2) {
+			backglass('DANGER', 'EASY ON THE NUDGE', 1.4);
+			Sound.danger();
+		}
 	}
 
 	// =====================================================================
@@ -620,15 +718,13 @@
 	}
 
 	// =====================================================================
-	// Info cards
+	// Info panel: small, non-blocking, sits over the score panel (the game keeps running)
 	// =====================================================================
 
-	const cardEl = document.getElementById('card');
-	const cardTitle = document.getElementById('card-title');
-	const cardBody = document.getElementById('card-body');
-	const cardGo = document.getElementById('card-go');
-	let cardDone = null;
-	let modeBeforeCard = 'play';
+	const infoEl = document.getElementById('info');
+	const infoTitle = document.getElementById('info-title');
+	const infoBody = document.getElementById('info-body');
+	let infoTime = 0, infoHover = false;
 
 	function el(tag, text, cls) {
 		const e = document.createElement(tag);
@@ -644,93 +740,57 @@
 		return a;
 	}
 
-	function openCard(kind, done) {
-		cardBody.textContent = '';
-		cardGo.firstChild.textContent = 'CONTINUE ▶ ';
+	function showInfo(kind) {
+		infoBody.textContent = '';
 
 		if (kind === 'project') {
 			const list = content.projects.length ? content.projects : [{ title: 'Projects', tag: 'eliarbogast.com', desc: 'See the Projects page on the main site.', href: '../#projects' }];
-			const p = list[game.projectIndex % list.length];
-			cardTitle.textContent = 'PROJECTS.TXT';
-			cardBody.append(el('div', 'PROJECT ' + (game.projectIndex % list.length + 1) + ' / ' + list.length + ' · SHOOT THE SAUCER FOR MORE', 'counter'));
-			if (p.img) { const im = el('img'); im.src = p.img; im.alt = p.alt || ''; cardBody.append(im); }
-			cardBody.append(el('div', p.tag, 'tag'), el('h2', p.title), el('p', p.desc));
-			if (p.href) { const pp = el('p'); pp.append(link('OPEN ↗', p.href)); cardBody.append(pp); }
+			const i = game.projectIndex % list.length, p = list[i];
+			infoTitle.textContent = 'PROJECT ' + (i + 1) + '/' + list.length;
+			infoBody.append(el('div', p.tag, 'tag'), el('h2', p.title), el('p', p.desc));
+			if (p.href) { const pp = el('p'); pp.append(link('OPEN ↗', p.href)); infoBody.append(pp); }
 			game.projectIndex++;
 		}
 
-		else if (kind === 'cv') {
-			cardTitle.textContent = 'CV.TXT';
-			cardBody.append(el('h2', 'EXPERIENCE'));
-			const ul = el('ul');
-			content.cvRoles.forEach(r => { const li = el('li', r.title); li.append(el('span', r.org, 'org')); ul.append(li); });
-			if (!content.cvRoles.length) ul.append(el('li', 'See the CV on the main site.'));
-			cardBody.append(ul);
-			if (content.education.length) { cardBody.append(el('h2', 'EDUCATION')); content.education.forEach(t => cardBody.append(el('p', t))); }
-			const pp = el('p');
-			pp.append(link('FULL CV', content.cvPage), document.createTextNode('  ·  '), link('PDF ↓', content.pdf));
-			cardBody.append(pp);
-		}
-
 		else if (kind === 'music') {
-			cardTitle.textContent = 'MUSIC.TXT';
-			cardBody.append(el('div', 'ALL THREE LANES LIT', 'counter'), el('h2', content.music.name));
+			infoTitle.textContent = 'MUSIC';
+			infoBody.append(el('h2', content.music.name));
 			const role = content.roles.find(r => /music|instrument|produc/i.test(r));
-			if (role) cardBody.append(el('p', role));
-			const pp = el('p');
-			pp.append(link('LISTEN ON SOUNDCLOUD ↗', content.music.href));
-			cardBody.append(pp);
+			if (role) infoBody.append(el('p', role));
+			const pp = el('p'); pp.append(link('LISTEN ON SOUNDCLOUD ↗', content.music.href)); infoBody.append(pp);
 		}
 
-		else if (kind === 'about') {
-			cardTitle.textContent = 'HELLO.TXT';
-			cardBody.append(el('div', 'E · L · I  SPELLED  +50,000', 'counter'), el('h2', content.name.toUpperCase()));
-			const ul = el('ul');
-			content.roles.forEach(r => ul.append(el('li', '> ' + r)));
-			cardBody.append(ul, el('p', content.tagline));
+		else if (kind === 'hello') {
+			infoTitle.textContent = 'HELLO';
+			infoBody.append(el('h2', content.name.toUpperCase()));
+			content.roles.forEach(r => infoBody.append(el('p', '> ' + r)));
 		}
 
 		else if (kind === 'over') {
-			cardTitle.textContent = 'GAME_OVER.TXT';
-			cardBody.append(el('h2', 'FINAL SCORE ' + game.score.toLocaleString('en-US')));
-			if (game.score >= game.hi && game.score > 0) cardBody.append(el('div', 'NEW HIGH SCORE!', 'tag'));
-			cardBody.append(el('p', 'Thanks for playing! Reach out about work, music, nerd stuff, anything:'), el('p', content.email));
-			const pp = el('p');
-			pp.append(link('BACK TO THE SITE', '../'), document.createTextNode('  ·  '), link('CONTACT', '../#contact'));
-			cardBody.append(pp);
-			cardGo.firstChild.textContent = 'PLAY AGAIN ▶ ';
+			infoTitle.textContent = 'GAME OVER';
+			infoBody.append(el('h2', game.score.toLocaleString('en-US')));
+			if (game.place) infoBody.append(el('div', '#' + game.place + ' ON THIS MACHINE', 'tag'));
+			infoBody.append(el('p', 'Thanks for playing! Say hi: ' + content.email));
 		}
 
-		modeBeforeCard = game.mode;
-		game.mode = 'card';
-		game.glitch = Math.max(game.glitch, 0.35);
-		cardDone = done || null;
-		cardEl.hidden = false;
+		infoEl.hidden = false;
+		infoEl.classList.remove('in'); void infoEl.offsetWidth; infoEl.classList.add('in');
+		infoTime = 9;
 		Sound.card();
-		releaseAllInput();
-		setTimeout(() => cardGo.focus({ preventScroll: true }), 30);
 	}
 
-	function closeCard() {
-		if (cardEl.hidden) return;
-		cardEl.hidden = true;
-		game.mode = modeBeforeCard === 'card' ? 'play' : modeBeforeCard;
-		const done = cardDone;
-		cardDone = null;
-		Sound.click();
-		if (done) done();
-		canvas.focus({ preventScroll: true });
-	}
+	function hideInfo() { infoEl.hidden = true; }
 
-	cardGo.addEventListener('click', closeCard);
-	document.getElementById('card-x').addEventListener('click', closeCard);
+	document.getElementById('info-x').addEventListener('click', hideInfo);
+	infoEl.addEventListener('mouseenter', () => { infoHover = true; });
+	infoEl.addEventListener('mouseleave', () => { infoHover = false; });
 
 	// =====================================================================
 	// Sound: tiny WebAudio synth (no samples)
 	// =====================================================================
 
 	const Sound = (function () {
-		let ac = null, master = null, hiss = null;
+		let ac = null, master = null;
 		let muted = false;
 		try { muted = localStorage.getItem('eli-pinball-mute') === '1'; } catch (e) {}
 
@@ -744,7 +804,6 @@
 				master = ac.createGain();
 				master.gain.value = muted ? 0 : 0.32;
 				master.connect(lp); lp.connect(ac.destination);
-				startHiss();
 			}
 			if (ac.state === 'suspended') ac.resume();
 		}
@@ -784,18 +843,20 @@
 			src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.02);
 		}
 
-		function startHiss() {
-			const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-			src.buffer = noiseBuffer(); src.loop = true;
-			f.type = 'highpass'; f.frequency.value = 3500;
-			g.gain.value = 0.018;
-			src.connect(f); f.connect(g); g.connect(master);
-			src.start();
-			hiss = g;
-		}
+		// Never let sound outlive the page: pause while the tab is hidden, shut down on leave.
+		document.addEventListener('visibilitychange', () => {
+			if (!ac) return;
+			if (document.hidden) { if (ac.state === 'running') ac.suspend(); }
+			else if (ac.state === 'suspended') ac.resume();
+		});
+		window.addEventListener('pagehide', () => {
+			if (!ac) return;
+			ac.close();
+			ac = null; master = null; noiseBuf = null;   // a fresh context is made on the next key press / tap
+		});
 
 		function arp(notes, step, type, vol, len) {
-			notes.forEach((n, i) => tone(n, len || step * 1.1, type || 'square', vol || 0.15, null, i * step));
+			notes.forEach((n, i) => { if (n) tone(n, len || step * 1.1, type || 'square', vol || 0.15, null, i * step); });
 		}
 
 		function setMuted(m) {
@@ -829,6 +890,17 @@
 			start: () => arp([262, 392, 523, 659, 784, 1047], 0.07, 'square', 0.12),
 			gameOver: () => arp([523, 494, 466, 440, 415, 392], 0.14, 'triangle', 0.2, 0.2),
 			card: () => { noise(0.12, 0.08, 4000, 0, 0.5); tone(1047, 0.05, 'square', 0.08, null, 0.05); },
+			promote: () => arp([392, 523, 659, 784, 1047], 0.07, 'square', 0.12),
+			frenzy: () => { arp([523, 659, 784, 1047, 1319, 1568], 0.05, 'square', 0.12); noise(0.3, 0.15, 3000, 0, 1); },
+			shot: () => tone(1800, 0.03, 'square', 0.04, 900),
+			nudge: () => { noise(0.08, 0.3, 300, 0, 1); tone(70, 0.08, 'triangle', 0.3, 45); },
+			danger: () => arp([880, 0, 880], 0.09, 'square', 0.12),
+			tilt: () => { tone(220, 0.6, 'sawtooth', 0.15, 55); noise(0.5, 0.2, 800, 0, 0.5); },
+			// Music lanes: a little tune instead of the generic fanfare.
+			jingle: () => {
+				[[659, 0], [784, 0.12], [988, 0.24], [880, 0.42], [784, 0.54], [659, 0.66], [784, 0.84], [988, 0.96]].forEach(([f, t]) => tone(f, 0.16, 'square', 0.11, null, t));
+				[[165, 0], [196, 0.42], [247, 0.84]].forEach(([f, t]) => tone(f, 0.38, 'triangle', 0.16, null, t));
+			},
 			click: () => tone(1568, 0.03, 'square', 0.08)
 		};
 	})();
@@ -844,11 +916,12 @@
 	const LEFT_KEYS = ['KeyA', 'ArrowLeft'];
 	const RIGHT_KEYS = ['KeyD', 'ArrowRight'];
 	const LAUNCH_KEYS = ['Space', 'ArrowDown', 'Enter'];
+	const NUDGE_KEYS = ['ShiftLeft', 'ShiftRight'];
 
 	function setFlipper(f, down) {
 		if (f.pressed === down) return;
+		if (down && game.tilted) return;
 		f.pressed = down;
-		if (game.mode === 'card') return;
 		if (down) {
 			Sound.flipper();
 			// Lane change: flippers rotate the lit top lanes.
@@ -884,10 +957,7 @@
 	}
 
 	window.addEventListener('keydown', e => {
-		if (!cardEl.hidden) {
-			if (['Space', 'Enter', 'Escape'].includes(e.code)) { e.preventDefault(); if (!e.repeat) closeCard(); }
-			return;
-		}
+		if (e.code === 'Escape') hideInfo();
 		if (e.target && e.target.closest && e.target.closest('a, button') && e.target !== canvas) {
 			if (e.code === 'Space' || e.code === 'Enter') return;   // let links/buttons work
 		}
@@ -902,6 +972,7 @@
 		if (LEFT_KEYS.includes(code)) setFlipper(flipL, true);
 		if (RIGHT_KEYS.includes(code)) setFlipper(flipR, true);
 		if (LAUNCH_KEYS.includes(code)) startPlunger();
+		if (NUDGE_KEYS.includes(code)) nudge();
 	});
 
 	window.addEventListener('keyup', e => {
@@ -921,7 +992,6 @@
 		e.preventDefault();
 		Sound.unlock();
 		canvas.focus({ preventScroll: true });
-		if (!cardEl.hidden) return;
 		if (game.mode === 'attract' || game.mode === 'over') { startGame(); return; }
 		const rect = canvas.getBoundingClientRect();
 		const right = (e.clientX - rect.left) > rect.width * (layout.portrait ? 0.5 : layout.view.w / layout.W * 0.5);
@@ -1002,6 +1072,8 @@
 		const scale = Math.min((window.innerWidth - 16) / layout.W, (window.innerHeight - 70) / layout.H);
 		canvas.style.width = Math.floor(layout.W * scale) + 'px';
 		canvas.style.height = Math.floor(layout.H * scale) + 'px';
+		document.getElementById('crt').classList.toggle('portrait', portrait);
+		infoEl.style.fontSize = Math.max(13, Math.round(layout.W * scale * (portrait ? 0.036 : 0.0165))) + 'px';
 		buildPost();
 	}
 
@@ -1261,6 +1333,8 @@
 		ctx.globalAlpha = 1;
 		ctx.fillStyle = '#120a19';
 		for (let i = 0; i < 5; i++) ctx.fillRect(b3[0], b0[1] - 4 - i * 6, bw, 1 + i * 0.5);
+		if (marquee.cur) { drawMarquee(b0, b3, bw, midX, midY); ctx.restore(); drawRails(); return; }
+
 		// Largest pixel-font size (multiple of 8) that fits the backglass.
 		let fs = 32;
 		ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1278,7 +1352,32 @@
 		ctx.font = '16px VT323'; ctx.fillStyle = PAL.teal;
 		ctx.fillText('· P I N B A L L ·', midX, subY);
 		ctx.restore();
+		drawRails();
+	}
 
+	function drawMarquee(b0, b3, bw, midX, midY) {
+		const m = marquee.cur, hgt = b0[1] - b3[1];
+		ctx.fillStyle = '#0a0610'; ctx.fillRect(b3[0], b3[1], bw, hgt);
+		ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+		let fs = 24;
+		while (fs > 8) { ctx.font = fs + 'px "Press Start 2P"'; if (ctx.measureText(m.title).width < bw * 0.9 && fs < hgt * 0.36) break; fs -= 8; }
+		ctx.font = fs + 'px "Press Start 2P"';
+		const on = m.t > 0.6 || Math.floor(m.t * 10) % 2 === 0;                 // blink in
+		if (on) glowText(m.title, midX, midY - Math.max(fs * 0.45, 8), ctx.font, PAL.gold);
+		if (m.sub) {
+			ctx.font = '16px VT323';
+			const w = ctx.measureText(m.sub).width;
+			// Long lines scroll across like a real dot-matrix display.
+			const x = w < bw * 0.92 ? midX : midX + bw / 2 + w / 2 - ((m.t * 70) % (bw + w));
+			glowText(m.sub, x, midY + Math.max(fs * 0.7, 11), '16px VT323', PAL.teal);
+		}
+		// Dot-matrix grid over the glass.
+		ctx.fillStyle = 'rgba(10,6,16,0.55)';
+		for (let y = Math.floor(b3[1]); y < b0[1]; y += 2) ctx.fillRect(b3[0], y, bw, 1);
+		for (let x = Math.floor(b3[0]); x < b3[0] + bw; x += 2) ctx.fillRect(x, b3[1], 1, hgt);
+	}
+
+	function drawRails() {
 		// Side rails (wood + chrome cap).
 		[[-28, 0], [TW, TW + 28]].forEach(([x0, x1]) => {
 			const H = 30;
@@ -1383,7 +1482,7 @@
 		const shape = GLIDER_PHASES[glider.phase];
 		const size = 9, lift = 12 + Math.sin(game.time * 3) * 2.5;
 		const cx = shape.reduce((a, p) => a + p[0], 0) / shape.length, cy = shape.reduce((a, p) => a + p[1], 0) / shape.length;
-		const lit = glider.flash > 0;
+		const lit = glider.flash > 0 || (frenzy() && Math.floor(game.time * 6) % 2 === 0);
 		const sh = P(glider.x + 3, glider.y + 3, 0);
 		ellipse(sh[0], sh[1], glider.r * sh[2], glider.r * sh[3] * 0.9, 'rgba(0,0,0,0.45)');
 		// Cubes, back to front: front face then top face.
@@ -1393,6 +1492,18 @@
 			poly([P(x0, y1, h0), P(x1, y1, h0), P(x1, y1, h1), P(x0, y1, h1)], lit ? '#ffd9a8' : '#1f6f6a');
 			poly([P(x0, y0, h1), P(x1, y0, h1), P(x1, y1, h1), P(x0, y1, h1)], lit ? '#ffffff' : PAL.teal, '#0b2f2d', 0.8);
 		});
+	}
+
+	// Glider-gun shots: little gliders that skate down the table (purely visual).
+	function drawShots() {
+		game.shots.forEach(sh => {
+			const c = P(sh.x, sh.y, 6);
+			const sz = 3 * c[2];
+			ctx.globalAlpha = Math.max(0, 1 - sh.t / 2.2);
+			ctx.fillStyle = PAL.gold;
+			GLIDER_PHASES[Math.floor(sh.t * 8) % 4].forEach(([gx, gy]) => ctx.fillRect(c[0] + (gx - 1.5) * sz, c[1] + (gy - 1.5) * sz, sz - 0.5, sz - 0.5));
+		});
+		ctx.globalAlpha = 1;
 	}
 
 	function drawPlunger() {
@@ -1456,6 +1567,7 @@
 		items.push({ y: 790, draw: drawPlunger });
 		items.push({ y: spinner.y + 8, draw: drawSpinner });
 		items.push({ y: glider.y + 6, draw: drawGlider });
+		items.push({ y: 700, draw: drawShots });
 		if (game.mode !== 'attract' || inLane()) items.push({ y: ball.y, draw: drawBall });
 		items.sort((a, b) => a.y - b.y).forEach(i => i.draw());
 
@@ -1540,26 +1652,40 @@
 			ctx.fillStyle = '#050307'; ctx.fillRect(p.x + 12, p.y + 146, p.w - 24, 40);
 		}
 
-		// High score.
-		ctx.font = '16px VT323'; ctx.fillStyle = '#8d867c'; ctx.textAlign = 'center';
-		ctx.fillText('HIGH SCORE  ' + game.hi.toLocaleString('en-US'), cx, p.y + 212);
+		// High score, or your current rank on the career ladder while playing.
+		ctx.textAlign = 'center';
+		if (playing && game.rank > 0) {
+			const role = content.cvRoles[content.cvRoles.length - game.rank];
+			let t = role ? role.title.toUpperCase() : '';
+			ctx.font = '16px VT323';
+			while (t.length > 4 && ctx.measureText(t).width > p.w - 20) t = t.slice(0, -2) + '…';
+			ctx.fillStyle = '#6d6474'; ctx.fillText('RANK ' + game.rank + '/' + content.cvRoles.length, cx, p.y + 206);
+			glowText(t, cx, p.y + 222, '16px VT323', PAL.gold);
+		} else {
+			ctx.font = '16px VT323'; ctx.fillStyle = '#8d867c';
+			ctx.fillText('HIGH SCORE  ' + game.hi.toLocaleString('en-US'), cx, p.y + 212);
+		}
 
-		// Controls, drawn as keys (the flipper keys light up while held).
+		// Controls, drawn as keys (they light up while held).
 		const L = flipL.pressed, R = flipR.pressed;
-		keycap(ctx, p.x + 24, p.y + 252, 18, 16, 'A', L, 8);
-		keycap(ctx, p.x + 46, p.y + 252, 18, 16, '<', L, 8);
-		keycap(ctx, p.x + p.w - 46, p.y + 252, 18, 16, '>', R, 8);
-		keycap(ctx, p.x + p.w - 24, p.y + 252, 18, 16, 'D', R, 8);
+		keycap(ctx, p.x + 24, p.y + 250, 18, 16, 'A', L, 8);
+		keycap(ctx, p.x + 46, p.y + 250, 18, 16, '<', L, 8);
+		keycap(ctx, p.x + p.w - 46, p.y + 250, 18, 16, '>', R, 8);
+		keycap(ctx, p.x + p.w - 24, p.y + 250, 18, 16, 'D', R, 8);
 		ctx.font = '16px VT323'; ctx.fillStyle = '#c9c2cc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-		ctx.fillText('FLIPPERS', cx, p.y + 252);
+		ctx.fillText('FLIPPERS', cx, p.y + 250);
 
-		keycap(ctx, p.x + 50, p.y + 286, 56, 16, 'SPACE', game.plungerCharging, 8);
-		ctx.font = '16px VT323'; ctx.fillStyle = '#c9c2cc'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-		ctx.fillText('LAUNCH', p.x + 88, p.y + 286);
-
-		keycap(ctx, p.x + 50, p.y + 320, 18, 16, 'M', false, 8);
-		ctx.font = '16px VT323'; ctx.fillStyle = '#c9c2cc'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-		ctx.fillText('SOUND ' + (Sound.isMuted() ? 'OFF' : 'ON'), p.x + 88, p.y + 320);
+		const rows = [
+			['SPACE', 56, 'LAUNCH', game.plungerCharging],
+			['SHIFT', 56, game.tilted ? 'TILTED!' : 'NUDGE', game.tilted || keysDown.has('ShiftLeft') || keysDown.has('ShiftRight')],
+			['M', 18, 'SOUND ' + (Sound.isMuted() ? 'OFF' : 'ON'), false]
+		];
+		rows.forEach(([key, w, label, on], i) => {
+			const y = p.y + 278 + i * 26;
+			keycap(ctx, p.x + 50, y, w, 16, key, on, 8);
+			ctx.font = '16px VT323'; ctx.fillStyle = '#c9c2cc'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+			ctx.fillText(label, p.x + 88, y);
+		});
 	}
 
 	// ---------------------------------------------------------------- VHS on-screen display
@@ -1570,10 +1696,8 @@
 		ctx.font = '18px VT323';
 		ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
 		ctx.fillStyle = '#f4f4f4';
-		const paused = game.mode === 'card';
 		ctx.textAlign = 'left';
-		if (paused) ctx.fillText('PAUSE ‖', v.x + 8, v.y + 6);
-		else if (game.mode === 'attract') { if (Math.floor(game.time * 1.5) % 2 === 0) ctx.fillText('PLAY ▶', v.x + 8, v.y + 6); }
+		if (game.mode === 'attract') { if (Math.floor(game.time * 1.5) % 2 === 0) ctx.fillText('PLAY ▶', v.x + 8, v.y + 6); }
 		else ctx.fillText('PLAY ▶', v.x + 8, v.y + 6);
 		ctx.textAlign = 'right';
 		ctx.fillText('SP', v.x + v.w - 8, v.y + 6);
@@ -1643,8 +1767,7 @@
 		last = now;
 		game.time += dt;
 
-		const running = game.mode !== 'card';
-		if (running) {
+		{
 			// Plunger charge.
 			if (game.plungerCharging) {
 				const before = game.plungerPower;
@@ -1653,7 +1776,7 @@
 			}
 
 			acc += dt;
-			while (acc >= STEP && game.mode !== 'card') { physicsStep(STEP); acc -= STEP; }
+			while (acc >= STEP) { physicsStep(STEP); acc -= STEP; }
 
 			// Timers.
 			walls.forEach(w => { if (w.flash > 0) w.flash -= dt; });
@@ -1679,8 +1802,18 @@
 				} else game.stillTime = 0;
 			}
 			if ((game.mode === 'lane' || game.mode === 'attract') && !inLane() && ball.y > TL + 12) resetBallToLane();
-		} else {
-			acc = 0;
+
+			// Tilt meter cools down; glider-gun shots; backglass messages; info panel timer.
+			game.tiltMeter = Math.max(0, game.tiltMeter - dt * 0.6);
+			if (frenzy() && game.time >= game.nextShot) {
+				game.nextShot = game.time + 0.55;
+				game.shots.push({ x: glider.x, y: glider.y + 10, vx: (Math.random() - 0.5) * 220, vy: 190 + Math.random() * 80, t: 0 });
+				Sound.shot();
+			}
+			game.shots = game.shots.filter(sh => { sh.t += dt; sh.x += sh.vx * dt; sh.y += sh.vy * dt; return sh.t < 2.2; });
+			if (!marquee.cur && marquee.queue.length) { marquee.cur = marquee.queue.shift(); marquee.cur.t = 0; }
+			if (marquee.cur && (marquee.cur.t += dt) > marquee.cur.secs) marquee.cur = null;
+			if (!infoEl.hidden && !infoHover && (infoTime -= dt) <= 0) hideInfo();
 		}
 
 		game.shake = Math.max(0, game.shake - dt * 12);
@@ -1689,7 +1822,7 @@
 		ctx.fillStyle = '#000';
 		ctx.fillRect(0, 0, layout.W, layout.H);
 		const t0 = performance.now();
-		drawScene(running ? dt : 0);
+		drawScene(dt);
 		drawPanel();
 		drawOSD();
 		const t1 = performance.now();
@@ -1729,7 +1862,7 @@
 		start: startGame,
 		launchWith: p => { game.plungerPower = p; launch(); },
 		flip: (side, down) => setFlipper(side === 'L' ? flipL : flipR, down),
-		closeCard
+		nudge, promote, showInfo, hideInfo, glider, topScores: () => topScores
 	};
 
 })();
