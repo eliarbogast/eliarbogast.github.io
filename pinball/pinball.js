@@ -110,7 +110,7 @@
 		});
 
 	// "Glider": a Game of Life glider that drifts across the upper playfield. Hit it!
-		const glider = { x: 182, y: 148, vx: 55, r: 15, minX: 145, maxX: 220, phase: 0, flash: 0, cooldown: 0, hits: 0 };
+		const glider = { x: 182, y: 362, vx: 55, r: 17, minX: 132, maxX: 233, phase: 0, flash: 0, cooldown: 0, hits: 0 };
 		const GLIDER_PHASES = [
 			[[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]],
 			[[0, 1], [2, 1], [1, 2], [2, 2], [1, 3]],
@@ -1042,19 +1042,19 @@
 		const portrait = window.innerHeight > window.innerWidth * 1.15;
 		layout.portrait = portrait;
 		if (portrait) {
-			layout.W = 300; layout.H = 560;
-			layout.panel = { x: 0, y: 0, w: 300, h: 74 };
-			layout.view = { x: 0, y: 74, w: 300, h: 486 };
+			layout.W = 320; layout.H = 590;
+			layout.panel = { x: 0, y: 0, w: 320, h: 74 };
+			layout.view = { x: 0, y: 74, w: 320, h: 516 };
 		} else {
-			layout.W = 480; layout.H = 360;
-			layout.view = { x: 0, y: 0, w: 300, h: 360 };
-			layout.panel = { x: 300, y: 0, w: 180, h: 360 };
+			layout.W = 560; layout.H = 400;
+			layout.view = { x: 0, y: 0, w: 390, h: 400 };
+			layout.panel = { x: 390, y: 0, w: 170, h: 400 };
 		}
 		canvas.width = layout.W;
 		canvas.height = layout.H;
 
 		const v = layout.view;
-		const sNear = (v.w - 6) / (TW + 56);             // fit table + cabinet rails
+		const sNear = (v.w - 6) / (TW + 30);             // fit table + cabinet rails
 		const bottom = v.y + v.h - 5;
 		const tilt = layout.portrait ? 0.78 : 0.5;            // smaller = more tilted (viewed from the front)
 		const span = Math.min(v.h - 74, sNear * TL * tilt);
@@ -1073,7 +1073,7 @@
 		canvas.style.width = Math.floor(layout.W * scale) + 'px';
 		canvas.style.height = Math.floor(layout.H * scale) + 'px';
 		document.getElementById('crt').classList.toggle('portrait', portrait);
-		infoEl.style.fontSize = Math.max(13, Math.round(layout.W * scale * (portrait ? 0.036 : 0.0165))) + 'px';
+		infoEl.style.fontSize = Math.max(13, Math.round(layout.W * scale * (portrait ? 0.036 : 0.014))) + 'px';
 		buildPost();
 	}
 
@@ -1245,6 +1245,9 @@
 			else insert(l.x, 112, 7, game.laneLit[i] || (game.mode === 'attract' && (Math.floor(game.time * 3) % 3) === i), PAL.gold, '♪');
 		});
 
+		// Glider-gun progress lights (all three flash while the gun is firing).
+		[0, 1, 2].forEach(i => insert(167.5 + i * 15, glider.y + 27, 5, frenzy() ? blink : glider.hits > i, PAL.gold, null));
+
 		// Bonus multiplier inserts + inlane lights.
 		[2, 3, 4, 5].forEach((m, i) => insert(148 + i * 23, 608, 8, game.mult >= m, PAL.gold, String(m)));
 		inlanes.forEach(s => insert(s.x, s.y + 16, 5, s.flash > 0 || (game.mode === 'play' && game.mult < 5 && slow), PAL.teal, null));
@@ -1317,7 +1320,7 @@
 		const topY = v.y + 6;
 		const far = P(0, 0, 0);
 		const bh = (far[1] - topY) / (far[2] * proj.HK);
-		const b0 = P(-28, 0, 0), b1 = P(TW + 28, 0, 0), b2 = P(TW + 28, 0, bh), b3 = P(-28, 0, bh);
+		const b0 = P(-15, 0, 0), b1 = P(TW + 15, 0, 0), b2 = P(TW + 15, 0, bh), b3 = P(-15, 0, bh);
 		const bb = ctx.createLinearGradient(0, b3[1], 0, b0[1]);
 		bb.addColorStop(0, '#2a1636'); bb.addColorStop(1, '#120a19');
 		poly([b0, b1, b2, b3], bb, '#4a3a55', 1);
@@ -1379,7 +1382,7 @@
 
 	function drawRails() {
 		// Side rails (wood + chrome cap).
-		[[-28, 0], [TW, TW + 28]].forEach(([x0, x1]) => {
+		[[-15, 0], [TW, TW + 15]].forEach(([x0, x1]) => {
 			const H = 30;
 			const inner = x0 < 0 ? x1 : x0;
 			poly([P(inner, 0, 0), P(inner, TL, 0), P(inner, TL, H), P(inner, 0, H)], '#1b1220');
@@ -1480,28 +1483,34 @@
 
 	function drawGlider() {
 		const shape = GLIDER_PHASES[glider.phase];
-		const size = 9, lift = 12 + Math.sin(game.time * 3) * 2.5;
+		const size = 12, lift = 14 + Math.sin(game.time * 3) * 2.5;
 		const cx = shape.reduce((a, p) => a + p[0], 0) / shape.length, cy = shape.reduce((a, p) => a + p[1], 0) / shape.length;
 		const lit = glider.flash > 0 || (frenzy() && Math.floor(game.time * 6) % 2 === 0);
+		const gun = frenzy();
 		const sh = P(glider.x + 3, glider.y + 3, 0);
-		ellipse(sh[0], sh[1], glider.r * sh[2], glider.r * sh[3] * 0.9, 'rgba(0,0,0,0.45)');
-		// Cubes, back to front: front face then top face.
+		ellipse(sh[0], sh[1], glider.r * 1.3 * sh[2], glider.r * 1.3 * sh[3], gun ? 'rgba(242,194,122,0.35)' : 'rgba(0,0,0,0.5)');
+		// Cubes, back to front: front face then top face (gold while the glider gun is firing).
+		const top = lit ? '#ffffff' : gun ? PAL.gold : '#7fe3dc';
+		const front = lit ? '#ffd9a8' : gun ? '#b8742e' : '#2a8f88';
 		shape.slice().sort((a, b) => a[1] - b[1]).forEach(([gx, gy]) => {
 			const x0 = glider.x + (gx - cx) * size - size / 2, y0 = glider.y + (gy - cy) * size - size / 2;
-			const x1 = x0 + size - 1, y1 = y0 + size - 1, h0 = lift, h1 = lift + size - 1;
-			poly([P(x0, y1, h0), P(x1, y1, h0), P(x1, y1, h1), P(x0, y1, h1)], lit ? '#ffd9a8' : '#1f6f6a');
-			poly([P(x0, y0, h1), P(x1, y0, h1), P(x1, y1, h1), P(x0, y1, h1)], lit ? '#ffffff' : PAL.teal, '#0b2f2d', 0.8);
+			const x1 = x0 + size - 1.5, y1 = y0 + size - 1.5, h0 = lift, h1 = lift + size - 1.5;
+			poly([P(x0, y1, h0), P(x1, y1, h0), P(x1, y1, h1), P(x0, y1, h1)], front, '#06201e', 1);
+			poly([P(x0, y0, h1), P(x1, y0, h1), P(x1, y1, h1), P(x0, y1, h1)], top, '#06201e', 1);
 		});
 	}
 
 	// Glider-gun shots: little gliders that skate down the table (purely visual).
 	function drawShots() {
 		game.shots.forEach(sh => {
-			const c = P(sh.x, sh.y, 6);
-			const sz = 3 * c[2];
+			const c = P(sh.x, sh.y, 8);
+			const sz = Math.max(2, 5 * c[2]);
 			ctx.globalAlpha = Math.max(0, 1 - sh.t / 2.2);
-			ctx.fillStyle = PAL.gold;
-			GLIDER_PHASES[Math.floor(sh.t * 8) % 4].forEach(([gx, gy]) => ctx.fillRect(c[0] + (gx - 1.5) * sz, c[1] + (gy - 1.5) * sz, sz - 0.5, sz - 0.5));
+			GLIDER_PHASES[Math.floor(sh.t * 8) % 4].forEach(([gx, gy]) => {
+				const x = c[0] + (gx - 1.5) * sz, y = c[1] + (gy - 1.5) * sz;
+				ctx.fillStyle = '#2a1408'; ctx.fillRect(x - 0.5, y - 0.5, sz + 0.5, sz + 0.5);
+				ctx.fillStyle = PAL.gold; ctx.fillRect(x, y, sz - 0.8, sz - 0.8);
+			});
 		});
 		ctx.globalAlpha = 1;
 	}
@@ -1627,6 +1636,8 @@
 			return;
 		}
 
+		ctx.save();
+		ctx.translate(0, Math.round((p.h - 360) / 2));
 		const cx = p.x + p.w / 2;
 
 		// Title.
@@ -1686,6 +1697,7 @@
 			ctx.font = '16px VT323'; ctx.fillStyle = '#c9c2cc'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
 			ctx.fillText(label, p.x + 88, y);
 		});
+		ctx.restore();
 	}
 
 	// ---------------------------------------------------------------- VHS on-screen display
@@ -1720,7 +1732,7 @@
 	function buildPost() {
 		const n = 1 << 16;
 		const noise = new Int8Array(n);
-		for (let i = 0; i < n; i++) noise[i] = (Math.random() * 2 - 1) * 9;
+		for (let i = 0; i < n; i++) noise[i] = (Math.random() * 2 - 1) * 5;
 		post = { src: new Uint8ClampedArray(layout.W * layout.H * 4), noise, mask: n - 1 };
 	}
 
@@ -1739,6 +1751,17 @@
 			if (y > H - 5) { shift = 3 + ((Math.random() * 4) | 0); extra = 20; }            // head-switching noise
 			if (glitch > 0 && Math.random() < glitch * 0.25) shift += ((Math.random() * 12) | 0) - 6;
 			const row = y * W;
+			if (shift === 0 && extra === 0) {
+				// Fast path: red from the pixel to the right, blue from the left, green in place.
+				let i = row * 4 + 4;
+				for (let x = 1; x < W - 1; x++, i += 4) {
+					const n = noise[(off++) & mask];
+					d[i] = src[i + 4] + n;
+					d[i + 1] = src[i + 1] + n;
+					d[i + 2] = src[i - 2] + n;
+				}
+				continue;
+			}
 			for (let x = 0; x < W; x++) {
 				const i = (row + x) * 4;
 				let xr = x + 1 + shift, xg = x + shift, xb = x - 1 + shift;
