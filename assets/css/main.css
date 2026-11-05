@@ -25,21 +25,26 @@
 		font-display: swap;
 	}
 
-/* Palette (sampled from the original fluid-art background) */
+/* Palette: warm bone and moss neutrals to match the grove background, with a muted ember accent.
+   (--teal is now a sage; the name is kept so existing rules keep working.) */
 
 	:root {
 		--bg: #0b0b09;
-		--ink: #f4f1ec;
-		--text: #d9d4cc;
-		--muted: #a39b91;
-		--ember: #d55137;
-		--ember-bright: #e8704f;
-		--amber: #b87a45;
-		--gold: #bf995f;
-		--crimson: #a52f34;
-		--maroon: #38211c;
-		--teal: #399ea3;
-		--teal-deep: #24826f;
+		--panel: #080a08;
+		--ink: #f2efe6;
+		--text: #d6d2c4;
+		--muted: #9f9c8c;
+		--ember: #c96a4e;
+		--ember-rgb: 201, 106, 78;
+		--ember-bright: #dc8a6c;
+		--amber: #b8895a;
+		--gold: #c9b98a;
+		--bone: #d6cfb6;
+		--moss: #84a078;
+		--crimson: #a5483f;
+		--maroon: #2f221d;
+		--teal: #86ad9a;
+		--teal-deep: #5e8f84;
 		--font-sans: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
 		--font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 	}
@@ -1990,7 +1995,7 @@ input, select, textarea {
 		}
 
 			#main > .panel.body {
-				background: #000000;
+				background: var(--panel);
 			}
 
 			#main > .panel.inactive {
@@ -2020,7 +2025,7 @@ input, select, textarea {
 				-webkit-align-items: center;
 				-ms-align-items: center;
 				align-items: center;
-				background: #000000;
+				background: var(--panel);
 
 			}
 

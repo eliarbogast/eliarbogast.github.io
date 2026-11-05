@@ -11,8 +11,8 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="theme-color" content="#0b0b09" />
 		<link rel="preload" href="assets/webfonts/space-grotesk-latin-var.woff2" as="font" type="font/woff2" crossorigin />
-		<link rel="stylesheet" href="assets/css/main.css?v=8b764f0d" />
-		<link rel="stylesheet" href="assets/css/custom.css?v=0b68ad53" />
+		<link rel="stylesheet" href="assets/css/main.css?v=198aa24a" />
+		<link rel="stylesheet" href="assets/css/custom.css?v=e27fba86" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css?v=781a2d23" /></noscript>
 	</head>
 	<body class="is-preload">
@@ -54,8 +54,8 @@ c-0.299805 -3.59961 -3.09961 -6.39941 -6.7002 -6.39941c-3.2998 0 -6.09961 2.7998
 c0 -3.7998 -3.10059 -6.89941 -6.90039 -6.89941s-6.59961 3 -6.89941 6.89941l-3.90039 66.4004l3.90039 141.7c0 3.7998 3 6.89941 6.89941 6.89941z"/></symbol>
 		</svg>
 
-		<!-- Animated cellular-automaton background (assets/js/automaton.js) -->
-			<canvas id="automaton" aria-hidden="true"></canvas>
+		<!-- Generative grove background (assets/js/canopy.js) -->
+			<div id="bg-canopy" aria-hidden="true"><canvas id="canopy"></canvas><canvas id="canopy-fx"></canvas></div>
 
 		<!-- Wrapper -->
 			<div id="wrapper">
@@ -194,11 +194,11 @@ c0 -3.7998 -3.10059 -6.89941 -6.90039 -6.89941s-6.59961 3 -6.89941 6.89941l-3.90
 										</span>
 									</a>
 									<a class="project" href="https://github.com/eliarbogast/eliarbogast.github.io" target="_blank" rel="noopener">
-										<span class="project-media"><img src="images/site-cover.webp" width="960" height="540" loading="lazy" alt="Two-species Game of Life cells in ember and teal" /></span>
+										<span class="project-media"><img src="images/site-cover.webp" width="480" height="360" loading="lazy" alt="Bare branching trees in moss and bone, grown by the site background" /></span>
 										<span class="project-body">
 											<span class="project-tag">Web · Generative</span>
 											<span class="project-title">This Website</span>
-											<span class="project-desc">The site you are on. The background is a live two-species Game of Life, colored from fluid-art paint.</span>
+											<span class="project-desc">The site you are on. The background is a grove that grows from simple branching rules, and the pinball page runs a live two-species Game of Life behind the table.</span>
 											<span class="project-cta">Source on GitHub <span class="project-arrow" aria-hidden="true">&rarr;</span></span>
 										</span>
 									</a>
@@ -248,7 +248,7 @@ c0 -3.7998 -3.10059 -6.89941 -6.90039 -6.89941s-6.59961 3 -6.89941 6.89941l-3.90
 
 		<!-- Scripts -->
 			<script src="assets/js/main.js?v=c995efc8"></script>
-			<script src="assets/js/automaton.js?v=3995f305"></script>
+			<script src="assets/js/canopy.js?v=619156e4"></script>
 
 	</body>
 </html>

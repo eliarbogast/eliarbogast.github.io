@@ -4,20 +4,25 @@
 	Colour tokens (--ember, --teal, ...) are defined at the top of main.css.
 */
 
-/* Cellular-automaton background */
+/* Generative grove background */
 
-	#automaton {
+	#bg-canopy {
 		position: fixed;
 		inset: 0;
-		width: 100%;
-		height: 100%;
 		z-index: -2;
-		image-rendering: auto;	/* smooth scaling blends each cell into its neighbours */
 		pointer-events: none;
-		opacity: 0.9;
+		opacity: 0.75;
+		transition: opacity 3s ease;
 	}
 
-	/* Texture + vignette over the automaton, echoing the original overlay.png treatment. */
+		#bg-canopy canvas {
+			position: absolute;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+		}
+
+	/* Texture + vignette over the background, echoing the original overlay.png treatment. */
 	body::before {
 		content: '';
 		position: fixed;
@@ -49,7 +54,7 @@
 
 	}
 
-	/* Rainbow tagline (links to Projects). The colours sweep in when the home panel is
+	/* Tagline (links to Projects), in the grove's ember-to-moss colours. The colours sweep in when the home panel is
 	   shown, fan out on hover, and sweep back in when the pointer leaves. */
 	.tagline-wrap {
 		margin-top: 1em;
@@ -59,19 +64,19 @@
 		display: inline-block;
 		text-decoration: none;
 		cursor: pointer;
-		background-color: #CA4246;
+		background-color: #B25A45;
 		background-image: linear-gradient(
 			45deg,
-			#CA4246 16.666%,
-			#E16541 16.666%,
-			#E16541 33.333%,
-			#F18F43 33.333%,
-			#F18F43 50%,
-			#8B9862 50%,
-			#8B9862 66.666%,
-			#476098 66.666%,
-			#476098 83.333%,
-			#A7489B 83.333%);
+			#B25A45 16.666%,
+			#C4864F 16.666%,
+			#C4864F 33.333%,
+			#C9B98A 33.333%,
+			#C9B98A 50%,
+			#A2B78A 50%,
+			#A2B78A 66.666%,
+			#7C9F8A 66.666%,
+			#7C9F8A 83.333%,
+			#5F8A8B 83.333%);
 		background-size: 100%;
 		background-repeat: repeat;
 		-webkit-background-clip: text;
@@ -134,7 +139,7 @@
 		.cv-download:hover,
 		.cv-download:focus-visible {
 			border-color: var(--ember);
-			background-color: rgba(213, 81, 55, 0.12);
+			background-color: rgba(var(--ember-rgb), 0.12);
 			color: #fff;
 		}
 
@@ -227,7 +232,7 @@
 
 		.pinball-link:hover,
 		.pinball-link:focus-visible {
-			background: rgba(213, 81, 55, 0.12);
+			background: rgba(var(--ember-rgb), 0.12);
 			border-color: var(--ember);
 			color: #fff;
 		}
@@ -249,7 +254,7 @@
 		align-items: stretch;
 		gap: 1.1em;
 		padding: 0.75em;
-		background: #0d0d0b;
+		background: #0b0e0b;
 		border: 1px solid rgba(255, 255, 255, 0.08);
 		color: var(--text);
 		text-decoration: none;
@@ -259,8 +264,8 @@
 		.project:hover,
 		.project:focus-visible {
 			transform: translateY(-2px);
-			border-color: rgba(213, 81, 55, 0.7);
-			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(213, 81, 55, 0.3);
+			border-color: rgba(var(--ember-rgb), 0.7);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(var(--ember-rgb), 0.3);
 		}
 
 	.project-media {
@@ -392,7 +397,7 @@
 		.sc-card:hover,
 		.sc-card:focus-visible {
 			border-color: var(--ember);
-			box-shadow: 0 0 0 1px var(--ember), 0 12px 40px rgba(213, 81, 55, 0.25);
+			box-shadow: 0 0 0 1px var(--ember), 0 12px 40px rgba(var(--ember-rgb), 0.25);
 			transform: translateY(-2px);
 		}
 
