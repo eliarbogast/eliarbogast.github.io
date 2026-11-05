@@ -208,14 +208,14 @@
 	   queued here and redrawn over the thin growth a few at a time (drawThick), so nothing jumps.
 	   Thick limbs blend smoothly into a darker outline with a lighter core. */
 	function thicken(tr, fin) {
-		var N = tr.nodes, i, n, q = Math.max(S, 0.8);
+		var N = tr.nodes, i, n;
 		for (i = 0; i < N.length; i++) N[i].tc = 0;
 		for (i = N.length - 1; i >= 0; i--) { n = N[i]; if (!n.kids) n.tc = 1; if (n.p) n.p.tc += n.tc; }
 		for (i = 0; i < N.length; i++) {
 			n = N[i];
 			if (!n.p || n.f < 1) continue;
 			n.nw = Math.min(tr.maxW, 0.9 + tr.k * Math.sqrt(n.tc - 1));
-			if (!n.q && (n.nw - n.dw > (fin ? 0.03 : 0.12) || n.nw > 2.2 * q)) { n.q = 1; thickQ.push(n); }
+			if (!n.q && n.nw - n.dw > (fin ? 0.03 : 0.12)) { n.q = 1; thickQ.push(n); }   // unchanged limbs are not redrawn: repainting round caps over neighbours' cores makes joints flicker
 		}
 	}
 
@@ -331,7 +331,9 @@
 	function fxDraw() {
 		fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 		fctx.clearRect(0, 0, W, H);
-		fctx.lineCap = 'round';
+		// Butt caps: the trail is many short translucent strokes, and round caps would double up the alpha
+		// at every joint, making the trail strobe as it moves and blow out to near-opaque at the leaf.
+		fctx.lineCap = 'butt';
 		var i, k, px = Math.max(2, Math.round(2 * S));
 		for (i = 0; i < motes.length; i++) {
 			var m = motes[i];
@@ -347,7 +349,8 @@
 				var f1 = p.i - k;
 				if (f1 < 0) break;
 				var to = along(p.path, Math.min(f1, len - 1));
-				fctx.strokeStyle = rgba(COL.pulse, amp * Math.pow(1 - k / TRAIL, 1.5));
+				if (to[0] === from[0] && to[1] === from[1]) continue;   // head is past the leaf: nothing to draw
+				fctx.strokeStyle = rgba(COL.pulse, amp * Math.pow(1 - (k - 0.5) / TRAIL, 1.5));
 				fctx.beginPath(); fctx.moveTo(from[0], from[1]); fctx.lineTo(to[0], to[1]); fctx.stroke();
 				from = to;
 			}
